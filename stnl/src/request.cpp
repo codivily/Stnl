@@ -14,6 +14,8 @@
 
 #include <fstream>
 #include <iostream>
+#include <vector>
+#include <map>
 
 namespace core = boost::core;
 namespace beast = boost::beast;
@@ -41,6 +43,10 @@ http::request<http::string_body> Request::GetHttpReq() const {
   return httpReq_;
 }
 
+std::map<std::string, std::string> Request::headers() const {
+    return headers_;
+}
+
 std::string Request::get_temp_upload_dir_()
 {
     fs::path temp_dir = fs::temp_directory_path();           // boost::filesystem
@@ -59,6 +65,13 @@ std::string Request::get_temp_upload_dir_()
 
 void Request::parse_request_()
 {
+    //headers_[http::to_string(http::field::authorization)] = httpReq_[http::field::authorization].to_string();
+    for (auto it = httpReq_.begin(); it != httpReq_.end(); ++it) {
+        std::string key(it->name_string().data(), it->name_string().size());
+        std::string val(it->value().data(), it->value().size());
+        headers_[std::move(key)] = std::move(val);
+    }
+
     parse_query_params_();
 
     beast::string_view ct = httpReq_[http::field::content_type];

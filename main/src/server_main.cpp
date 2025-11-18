@@ -43,6 +43,7 @@ http::message_generator ServerMain::ApiPostData(const STNL::Request& req) {
   for(const STNL::UploadedFile& uf : req.files()) {
     fpaths.push_back(uf.file.string());
   }
+  resData["headers"] = json::value_from(req.headers());
   resData["data"] = reqData;
   resData["query"] = req.query();
   resData["status"] = true;

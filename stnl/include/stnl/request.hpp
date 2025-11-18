@@ -7,6 +7,7 @@
 #include <boost/json.hpp>
 #include <unordered_map>
 #include <vector>
+#include <map>
 #include <string>
 #include <boost/filesystem.hpp>
 
@@ -28,6 +29,7 @@ namespace STNL {
     public:
       static Request parse(const http::request<http::string_body>& httpReq);
       http::request<http::string_body> GetHttpReq() const;
+      std::map<std::string, std::string> headers() const;
       std::vector<UploadedFile> files() const;
       boost::json::object data() const;
       boost::json::object query() const;
@@ -35,6 +37,7 @@ namespace STNL {
     private:
       Request(const http::request<http::string_body>& req);
       http::request<http::string_body> httpReq_;
+      std::map<std::string, std::string> headers_;
       boost::json::object data_;
       boost::json::object query_;
       std::vector<UploadedFile> parsed_files_;
