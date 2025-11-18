@@ -7,8 +7,11 @@ namespace asio = boost::asio;
 
 namespace STNL
 {
+
+  std::unique_ptr<asio::strand<asio::io_context::executor_type>> Logger::strand_;
+
   void Logger::Init(asio::io_context& ioc) {
-    strand_ = asio::make_strand(ioc);
+    strand_ = std::make_unique<asio::strand<asio::io_context::executor_type>>(ioc.get_executor());
   }
 
   void Logger::Dbg(std::string msg) {
@@ -28,7 +31,11 @@ namespace STNL
   }
 
   void Logger::Log(std::string logType, std::string msg) {
-    asio::post(strand_, [msg, logType]() {
+    if (!strand_) {
+      std::cout << "[" + logType + "]: " << msg << std::endl;
+      return;
+    }
+    asio::post(*strand_, [msg = std::move(msg), logType = std::move(logType)]() {
       std::cout << "[" + logType + "]: " << msg << std::endl;
     });
   }

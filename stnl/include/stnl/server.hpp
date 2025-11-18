@@ -18,19 +18,19 @@ namespace asio = boost::asio;
 namespace fs = boost::filesystem;
 using tcp = boost::asio::ip::tcp;
 
-class STNLModule; // forward delcaration
 
 namespace STNL {
-
+    
+class STNLModule; // forward delcaration
 
 struct CharPtrHash {
-    std::size_t operator()(const char* key) const noexcept {
+    std::size_t operator()(volatile const void* key) const noexcept {
         return std::hash<std::uintptr_t>{}(reinterpret_cast<std::uintptr_t>(key));
     }
 };
 
 struct CharPtrEqual {
-    bool operator()(const char* lhs, const char* rhs) const noexcept {
+    bool operator()(volatile const void* lhs, volatile const void* rhs) const noexcept {
         return lhs == rhs;
     }
 };
@@ -55,11 +55,12 @@ public:
     void AddModule()
     {
         static_assert(std::is_base_of_v<STNLModule, ModuleType>, "ModuleType must inherit from STNLModule");
-        static_assert(std::is_same_v<decltype(ModuleType::sType), const char>, "ModuleType must define static char sType");  // Enforce at compile-time
-        auto it = modules_.find(&ModuleType::sType);
+        static_assert(std::is_same_v<decltype(ModuleType::sType), volatile const char>, "ModuleType must define static char sType");  // Enforce at compile-time
+        volatile const void* key = &ModuleType::sType;
+        auto it = modules_.find(key);
         if (it == modules_.end()) {
-            std::shared_ptr<STNLModule> m = std::make_shared<ModuleType>(shared_from_this());
-            modules_[&ModuleType::sType] = m;
+            std::shared_ptr<STNLModule> m = std::static_pointer_cast<STNLModule>(std::make_shared<ModuleType>(shared_from_this()));
+            modules_[key] = m;
             modulesVec_.push_back(m);
         }
     }
@@ -67,8 +68,9 @@ public:
     template <typename ModuleType>
     std::shared_ptr<ModuleType> GetModule() {
         static_assert(std::is_base_of_v<STNLModule, ModuleType>, "ModuleType must inherit from STNLModule");
-        static_assert(std::is_same_v<decltype(ModuleType::sType), const char>, "ModuleType must define static char sType");  // Enforce at compile-time
-        auto it = modules_.find(&ModuleType::sType);
+        static_assert(std::is_same_v<decltype(ModuleType::sType), volatile const char>, "ModuleType must define static char sType");  // Enforce at compile-time
+        volatile const void* key = &ModuleType::sType;
+        auto it = modules_.find(key);
         if (it == modules_.end()) { return nullptr; }
         return std::static_pointer_cast<ModuleType>(it->second);
     }
@@ -85,7 +87,7 @@ private:
     void AddRoute(http::verb method, std::string path, RouteHandler handler);
 
     std::vector<std::shared_ptr<STNLModule>> modulesVec_;
-    std::unordered_map<const char*, std::shared_ptr<STNLModule>, CharPtrHash, CharPtrEqual> modules_;
+    std::unordered_map<volatile const void*, std::shared_ptr<STNLModule>, CharPtrHash, CharPtrEqual> modules_;
     asio::io_context& ioc_;
     tcp::acceptor acceptor_;  // Fixed: was missing type in original
     Router router_;

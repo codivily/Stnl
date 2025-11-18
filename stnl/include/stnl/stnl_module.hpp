@@ -11,7 +11,7 @@ namespace STNL {
 
   class STNLModule {
     public:
-    static const char sType{};
+    inline static volatile const char sType{};
     ~STNLModule() = default;
     STNLModule(std::shared_ptr<Server> server); // for accessing usefull things
     std::shared_ptr<Server> GetServer();

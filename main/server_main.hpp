@@ -12,7 +12,7 @@ namespace asio = boost::asio;
 class ServerMain: public STNL::STNLModule {
 
   public:
-    static const char sType{};
+    inline static volatile const char sType{};
     ServerMain(std::shared_ptr<STNL::Server> server);
     void Setup() override;
     void Launch() override;

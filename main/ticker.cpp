@@ -3,7 +3,12 @@
 #include "ticker.hpp"
 #include "stnl/stnl_module.hpp"
 #include "stnl/server.hpp"
+#include "stnl/logger.hpp"
+
 #include <iostream>
+
+
+using Logger = STNL::Logger;
 
 Ticker::Ticker(std::shared_ptr<STNL::Server> server) : STNL::STNLModule(server), counter_(0){}
 
@@ -24,9 +29,9 @@ int Ticker::GetValue() {
 }
 
 void Ticker::Setup() {
-  std::cout << "Ticker::Setup()" << std::endl;
+  Logger::Dbg("Ticker::Setup()");
 }
 
 void Ticker::Launch() {
-  std::cout << "Ticker::Launch()" << std::endl;
+  Logger::Dbg("Ticker::Launch()");
 }

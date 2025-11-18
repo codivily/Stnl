@@ -19,9 +19,8 @@ namespace STNL
   static void Wrn(std::string msg);
 
   private:
-    Logger();
-    static asio::strand<asio::io_context::executor_type> strand_;
-    
+    Logger() = delete;
+    static std::unique_ptr<asio::strand<asio::io_context::executor_type>> strand_;
   };
 
 } // namespace STNL
