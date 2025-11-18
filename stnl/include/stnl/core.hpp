@@ -15,15 +15,17 @@ using tcp = boost::asio::ip::tcp;
 
 namespace STNL
 {
+    class Request; // forward declaration
+
     using HttpRequestBody = http::string_body;
     using HttpRequest = http::request<HttpRequestBody>;
     
     // Middleware type: a function that takes request and response by reference.
     // It returns true to continue, false to stop (short-circuit).
-    using Middleware = std::function<bool(HttpRequest&)>;
+    using Middleware = std::function<bool(Request&)>;
     
     // HttpHandler type: processes the request and populate the response.
-    using RouteHandler = std::function<http::message_generator(const HttpRequest&)>;
+    using RouteHandler = std::function<http::message_generator(const Request&)>;
     
     // Route key: HTTP method + path
     using Route = std::pair<http::verb, std::string>;

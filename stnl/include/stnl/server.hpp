@@ -22,6 +22,7 @@ using tcp = boost::asio::ip::tcp;
 namespace STNL {
     
 class STNLModule; // forward delcaration
+class Request; // forward declaration
 
 struct CharPtrHash {
     std::size_t operator()(volatile const void* key) const noexcept {
@@ -39,8 +40,8 @@ class Server : public std::enable_shared_from_this<Server> {
 public:
     Server(asio::io_context& ioc, tcp::endpoint endpoint, fs::path rootDirPath);
     
-    static http::message_generator Response(const HttpRequest& req, http::status status_code, std::string msg);
-    static http::message_generator Response(const HttpRequest& req, fs::path file_path, std::string content_type);
+    static http::message_generator Response(const Request& req, http::status status_code, std::string msg);
+    static http::message_generator Response(const Request& req, fs::path file_path, std::string content_type);
 
     void UseMiddleware(Middleware middleware);
     const std::vector<Middleware>& GetMiddlewares() const; 

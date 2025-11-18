@@ -2,6 +2,7 @@
 #include "stnl/stnl_module.hpp"
 #include "stnl/session.hpp"
 #include "stnl/server.hpp"
+#include "stnl/request.hpp"
 
 
 #include <boost/beast/version.hpp>
@@ -26,11 +27,11 @@ namespace STNL
     Server::Server(asio::io_context &ioc, tcp::endpoint endpoint, fs::path rootDirPath)
         : ioc_(ioc), acceptor_(ioc, endpoint), rootDirPath_(rootDirPath) {} // Fixed: acceptor needs ioc
 
-    http::message_generator Server::Response(const HttpRequest& req, fs::path file_path, std::string content_type) {
+    http::message_generator Server::Response(const Request& req, fs::path file_path, std::string content_type) {
         if (!fs::exists(file_path) || !fs::is_regular_file(file_path)) {
             return Server::Response(req, http::status::not_found, "");
         }
-        http::response<http::file_body> res{http::status::ok, req.version()};
+        http::response<http::file_body> res{http::status::ok, req.GetHttpReq().version()};
         beast::error_code ec;
         res.body().open(file_path.string().c_str(), beast::file_mode::read, ec);
         if (ec) {
@@ -42,14 +43,14 @@ namespace STNL
         return http::message_generator{std::move(res)};
     }
     
-    http::message_generator Server::Response(const HttpRequest& req, http::status status_code, std::string msg) {
+    http::message_generator Server::Response(const Request& req, http::status status_code, std::string msg) {
         if (msg.empty()) {
-            http::response<http::empty_body> res{status_code, req.version()};
+            http::response<http::empty_body> res{status_code, req.GetHttpReq().version()};
             res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
             res.prepare_payload();
             return http::message_generator{std::move(res)};
         }
-        http::response<http::string_body> res{status_code, req.version()};
+        http::response<http::string_body> res{status_code, req.GetHttpReq().version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         res.set(http::field::content_type, "text/plain");
         res.body() = msg;

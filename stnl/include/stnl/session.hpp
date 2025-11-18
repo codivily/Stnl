@@ -11,7 +11,7 @@
 namespace beast = boost::beast;
 
 namespace STNL {
-
+    class Request; // forward declaration
     class Server; // forward declaration
 
     class Session : public std::enable_shared_from_this<Session> {
@@ -23,12 +23,12 @@ namespace STNL {
         void DoRead();
         void OnRead(beast::error_code ec, std::size_t bytes_transferred);
         void OnWrite(beast::error_code ec, std::size_t bytes_transferred);
-        http::message_generator HandleRequest();
-        bool ApplyMiddlewares();
+        http::message_generator HandleRequest(Request& req);
+        bool ApplyMiddlewares(Request& req);
     
         beast::tcp_stream stream_;  // Fixed typo: was "stram_"
         beast::flat_buffer buffer_;
-        HttpRequest req_;
+        HttpRequest httpReq_;
         std::shared_ptr<Server> server_;  // Access routes & middleware
         bool keepAlive_;
     };

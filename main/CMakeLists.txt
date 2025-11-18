@@ -17,5 +17,7 @@ target_link_libraries(app
     Boost::headers
   PRIVATE
     Boost::filesystem
+    Boost::json
+    Boost::url
     stnl
 )

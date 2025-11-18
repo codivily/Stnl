@@ -5,6 +5,7 @@ add_library(stnl
         src/session.cpp
         src/logger.cpp
         src/server.cpp
+        src/request.cpp
         src/utils.cpp
 )
 
@@ -20,4 +21,7 @@ target_include_directories(stnl
 target_link_libraries(stnl
     PUBLIC
         Boost::headers
+    PRIVATE
+        Boost::json
+        Boost::url
 )

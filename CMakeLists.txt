@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find required packages
-find_package(Boost COMPONENTS headers filesystem beast)
+find_package(Boost COMPONENTS headers filesystem beast json url)
 
 # Add subdirectories
 add_subdirectory(stnl)

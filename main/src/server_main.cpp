@@ -6,6 +6,7 @@
 
 #include "stnl/server.hpp"
 #include "stnl/logger.hpp"
+#include "stnl/request.hpp"
 
 #include <boost/beast/version.hpp>
 #include <boost/beast/http/file_body.hpp>
@@ -28,7 +29,7 @@ using Logger = STNL::Logger;
 
 ServerMain::ServerMain(std::shared_ptr<STNL::Server> server) : STNL::STNLModule(std::move(server)) {}
 
-http::message_generator ServerMain::webGetHome(const STNL::HttpRequest& req) {
+http::message_generator ServerMain::webGetHome(const STNL::Request& req) {
   std::shared_ptr<Ticker> ticker = GetServer()->GetModule<Ticker>();
   int tickerValue = ticker->GetValue();
   ticker->Increment();
@@ -48,7 +49,7 @@ http::message_generator ServerMain::webGetHome(const STNL::HttpRequest& req) {
 
 void ServerMain::Setup() {
   Logger::Dbg("ServerMain::Setup()");
-  GetServer()->Get("/", [this](const STNL::HttpRequest& req) -> http::message_generator { return this->webGetHome(req); });
+  GetServer()->Get("/", [this](const STNL::Request& req) -> http::message_generator { return this->webGetHome(req); });
 }
 
 void ServerMain::Launch() {

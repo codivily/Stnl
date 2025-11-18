@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     // Get the max threads = the number of logical cores
     unsigned int numThreads = std::thread::hardware_concurrency();
     if (numThreads == 0) { numThreads = 1; }
-
+    
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
     for (unsigned int i = 0; i < numThreads; ++i) {

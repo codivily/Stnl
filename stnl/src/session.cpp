@@ -1,5 +1,6 @@
 #include "stnl/server.hpp"
 #include "stnl/core.hpp"
+#include "stnl/request.hpp"
 #include "stnl/session.hpp"
 
 #include <boost/beast/http/read.hpp>  // For async_read
@@ -26,8 +27,8 @@ Session::Session(tcp::socket socket, std::shared_ptr<Server> server)
 void Session::Run() { DoRead(); }
 
 void Session::DoRead() {
-    req_ = HttpRequest{};
-    http::async_read(stream_, buffer_, req_,
+    httpReq_ = HttpRequest{};
+    http::async_read(stream_, buffer_, httpReq_,
         beast::bind_front_handler(&Session::OnRead, shared_from_this()));
 }
 
@@ -41,7 +42,8 @@ void Session::OnRead(beast::error_code ec, std::size_t) {  // bytes_transferred 
         std::cerr << "Session::OnRead: ERROR: " << ec.message() << std::endl;
         return;
     }
-    http::message_generator res = HandleRequest();
+    Request req = Request::parse(httpReq_);  // Wrap the HttpRequest for easier access
+    http::message_generator res = HandleRequest(req);
     keepAlive_ = res.keep_alive();
     beast::async_write(stream_, std::move(res),
         beast::bind_front_handler(&Session::OnWrite, shared_from_this()));
@@ -60,42 +62,42 @@ void Session::OnWrite(beast::error_code ec, std::size_t) {  // bytes_transferred
     }
 }
 
-bool Session::ApplyMiddlewares() {
+bool Session::ApplyMiddlewares(Request& req) {
     const std::vector<Middleware>& middlewares = server_->GetMiddlewares();
     for (const Middleware& mw : middlewares) {  // Fixed: was "c" for copy
-        if (!mw(req_)) {
+        if (!mw(req)) {
             return false;  // Stop processing if middleware rejects
         }
     }
     return true;
 }
 
-http::message_generator Session::HandleRequest() {
-    std::cout << req_.method() << ": " << std::string(req_.target()) << std::endl;
+http::message_generator Session::HandleRequest(Request& req) {
+    std::cout << httpReq_.method() << ": " << std::string(httpReq_.target()) << std::endl;
 
     // FIXED: Extract path-only (strip query) for routing
-    std::string_view full_target{req_.target()};
+    std::string_view full_target{httpReq_.target()};
     std::string_view path = full_target;
     size_t query_pos = full_target.find('?');
     if (query_pos != std::string_view::npos) {
         path = full_target.substr(0, query_pos);
     }
 
-    Route key{req_.method(), std::string(path)};  // Use path-only
+    Route key{httpReq_.method(), std::string(path)};  // Use path-only
     auto it = server_->GetRouter().find(key);
     if (it == server_->GetRouter().end())
     {
         std::cout << "HandleRequest: Not Found " << std::string(full_target) << std::endl;
-        return Server::Response(req_, http::status::not_found, "Not Found (HTTP 404)");
+        return Server::Response(req, http::status::not_found, "Not Found (HTTP 404)");
     }
     // Run the middleware chain before handler
-    if (!ApplyMiddlewares()) {
+    if (!ApplyMiddlewares(req)) {
         std::cout << "HandleRequest: Middleware reject " << std::string(full_target) << std::endl;  // FIXED: Added space
-        return Server::Response(req_, http::status::forbidden, "Forbidden");
+        return Server::Response(req, http::status::forbidden, "Forbidden");
     }
 
     // FIXED: Full "return"
-    return it->second(req_);
+    return it->second(req);
 }
 
 }  // namespace STNL
