@@ -13,6 +13,7 @@
 #include <boost/asio.hpp>
 #include <boost/system.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/json.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -24,33 +25,39 @@
 namespace fs = boost::filesystem;
 namespace http = beast::http;
 namespace asio = boost::asio;
+namespace json = boost::json;
 
 using Logger = STNL::Logger;
 
 ServerMain::ServerMain(std::shared_ptr<STNL::Server> server) : STNL::STNLModule(std::move(server)) {}
 
-http::message_generator ServerMain::webGetHome(const STNL::Request& req) {
-  std::shared_ptr<Ticker> ticker = GetServer()->GetModule<Ticker>();
-  int tickerValue = ticker->GetValue();
-  ticker->Increment();
-  if (ticker->GetValue() > 15) { ticker->Reset(); }
-  // Logger::Dbg("Ticker::GetValue() -> " + std::to_string(tickerValue));
-
-  if (tickerValue > 5) {
-    std::string msg = "ServerMain:Ticker:Value: " + std::to_string(tickerValue);
-    Logger::Dbg(msg);
-    return STNL::Server::Response(req, http::status::ok, std::move(msg));
-  }
-  // const fs::path filePath = GetServer()->GetRootDirPath() / "index.html";
-  // return STNL::Server::Response(req, std::move(filePath), "text/html");
+http::message_generator ServerMain::WebGetHome(const STNL::Request& req) {
   return STNL::Server::Response(req, GetServer()->GetRootDirPath() / "index.html", "text/html");
+}
+
+http::message_generator ServerMain::ApiPostData(const STNL::Request& req) {
+  boost::json::object reqData = req.data();
+  boost::json::object resData;
+  std::shared_ptr<Ticker> ticker = GetServer()->GetModule<Ticker>();
+  std::vector<std::string> fpaths;
+  for(const STNL::UploadedFile& uf : req.files()) {
+    fpaths.push_back(uf.file.string());
+  }
+  resData["data"] = reqData;
+  resData["query"] = req.query();
+  resData["status"] = true;
+  resData["ticker"] = ticker->Increment();
+  resData["files"] = json::value_from(fpaths);
+  return STNL::Server::Response(req, resData);
 }
 
 
 void ServerMain::Setup() {
   Logger::Dbg("ServerMain::Setup()");
-  GetServer()->Get("/", [this](const STNL::Request& req) -> http::message_generator { return this->webGetHome(req); });
+  GetServer()->Get("/", [this](const STNL::Request& req) -> http::message_generator { return this->WebGetHome(req); });
+  GetServer()->Post("/api/data", [this](const STNL::Request& req) -> http::message_generator { return this->ApiPostData(req); });
 }
+
 
 void ServerMain::Launch() {
   Logger::Dbg("ServerMain::Launch()");

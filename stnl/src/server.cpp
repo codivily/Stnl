@@ -27,15 +27,15 @@ namespace STNL
     Server::Server(asio::io_context &ioc, tcp::endpoint endpoint, fs::path rootDirPath)
         : ioc_(ioc), acceptor_(ioc, endpoint), rootDirPath_(rootDirPath) {} // Fixed: acceptor needs ioc
 
-    http::message_generator Server::Response(const Request& req, fs::path file_path, std::string content_type) {
+    http::message_generator Server::Response(const Request& req, fs::path file_path, std::string content_type, http::status status_code) {
         if (!fs::exists(file_path) || !fs::is_regular_file(file_path)) {
-            return Server::Response(req, http::status::not_found, "");
+            return Server::Response(req, "",  http::status::not_found);
         }
-        http::response<http::file_body> res{http::status::ok, req.GetHttpReq().version()};
+        http::response<http::file_body> res{std::move(status_code), req.GetHttpReq().version()};
         beast::error_code ec;
         res.body().open(file_path.string().c_str(), beast::file_mode::read, ec);
         if (ec) {
-           return Server::Response(req, http::status::internal_server_error, "Interval Server Error"); 
+           return Server::Response(req, "Interval Server Error", http::status::internal_server_error); 
         }
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         res.set(http::field::content_type, content_type);
@@ -43,9 +43,9 @@ namespace STNL
         return http::message_generator{std::move(res)};
     }
     
-    http::message_generator Server::Response(const Request& req, http::status status_code, std::string msg) {
+    http::message_generator Server::Response(const Request& req, std::string msg, http::status status_code) {
         if (msg.empty()) {
-            http::response<http::empty_body> res{status_code, req.GetHttpReq().version()};
+            http::response<http::empty_body> res{std::move(status_code), req.GetHttpReq().version()};
             res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
             res.prepare_payload();
             return http::message_generator{std::move(res)};
@@ -57,7 +57,15 @@ namespace STNL
         res.prepare_payload();
         return http::message_generator{std::move(res)};
     }
-    
+
+    http::message_generator Server::Response(const Request& req, const boost::json::object& data, http::status status_code) {
+        http::response<http::string_body> res{std::move(status_code), req.GetHttpReq().version()};
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, "application/json");
+        res.body() = boost::json::serialize(data);
+        res.prepare_payload();
+        return http::message_generator{std::move(res)};
+    }
 
     void Server::AddRoute(http::verb method, std::string path, RouteHandler handler)
     {

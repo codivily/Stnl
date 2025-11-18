@@ -17,7 +17,9 @@ class ServerMain: public STNL::STNLModule {
     ServerMain(std::shared_ptr<STNL::Server> server);
     void Setup() override;
     void Launch() override;
-    http::message_generator webGetHome(const STNL::Request& req);
+    //
+    http::message_generator WebGetHome(const STNL::Request& req);
+    http::message_generator ApiPostData(const STNL::Request& req);
 };
 
 #endif // MAIN_HTTP_HANDLER_HPP

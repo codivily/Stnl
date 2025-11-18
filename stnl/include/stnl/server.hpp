@@ -7,6 +7,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/json.hpp>
 
 #include <string>
 #include <vector>
@@ -40,8 +41,9 @@ class Server : public std::enable_shared_from_this<Server> {
 public:
     Server(asio::io_context& ioc, tcp::endpoint endpoint, fs::path rootDirPath);
     
-    static http::message_generator Response(const Request& req, http::status status_code, std::string msg);
-    static http::message_generator Response(const Request& req, fs::path file_path, std::string content_type);
+    static http::message_generator Response(const Request& req, std::string msg, http::status status_code = http::status::ok);
+    static http::message_generator Response(const Request& req, fs::path file_path, std::string content_type, http::status status_code = http::status::ok);
+    static http::message_generator Response(const Request& req, const boost::json::object& data, http::status status_code = http::status::ok);
 
     void UseMiddleware(Middleware middleware);
     const std::vector<Middleware>& GetMiddlewares() const; 

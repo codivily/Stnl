@@ -82,13 +82,13 @@ void Request::parse_json_body_()
     boost::system::error_code ec;
     json::value jv = json::parse(body, ec);
     if (ec) {
-        parsed_json_ = {};
+        data_ = {};
         return;
     }
     if (jv.is_object()) {
-        parsed_json_ = jv.as_object();
+        data_ = jv.as_object();
     } else {
-        parsed_json_ = {}; // or handle array/null if your API allows it
+        data_ = {}; // or handle array/null if your API allows it
     }
 }
 
@@ -100,7 +100,7 @@ void Request::parse_query_params_()
     for (const urls::param& param : uv.params()) {
         std::string key = param.key;
         std::string val = param.value;
-        parsed_json_[std::move(key)] = std::move(val);
+        query_[std::move(key)] = std::move(val);
     }
 }
 
@@ -121,7 +121,7 @@ void Request::parse_urlencoded_body_()
     for (const urls::param& param : uv.params()) {
         std::string key = param.key;
         std::string val = param.value;
-        parsed_json_[std::move(key)] = std::move(val);
+        data_[std::move(key)] = std::move(val);
     }
 }
 
@@ -206,7 +206,7 @@ void Request::parse_multipart_()
         }
         else if (!name.empty()) {
             // Regular field
-            parsed_json_[name] = std::move(content);
+            data_[name] = std::move(content);
         }
 
         pos = next_boundary;
@@ -214,8 +214,8 @@ void Request::parse_multipart_()
 }
 
 // Public accessors
-json::object Request::json() const { return parsed_json_; }
-json::object Request::data() const { return parsed_json_; }
+json::object Request::query() const { return query_; }
+json::object Request::data() const { return data_; }
 std::vector<UploadedFile> Request::files() const { return parsed_files_; }
 
 } // namespace STNL

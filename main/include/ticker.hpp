@@ -12,8 +12,8 @@ public:
   void Setup() override;
   void Launch() override;
   void Reset();
-  void Increment();
-  void Decrement();
+  int Increment();
+  int Decrement();
   int GetValue();
 
 private:

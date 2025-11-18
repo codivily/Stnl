@@ -16,12 +16,14 @@ void Ticker::Reset() {
   counter_ = 0;
 }
 
-void Ticker::Increment() {
+int Ticker::Increment() {
   ++counter_;
+  return counter_;
 }
 
-void Ticker::Decrement() {
+int Ticker::Decrement() {
   if (counter_ > 0) { --counter_; }
+  return counter_;
 }
 
 int Ticker::GetValue() {

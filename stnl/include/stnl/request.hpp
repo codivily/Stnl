@@ -28,14 +28,15 @@ namespace STNL {
     public:
       static Request parse(const http::request<http::string_body>& httpReq);
       http::request<http::string_body> GetHttpReq() const;
-      boost::json::object json() const;
       std::vector<UploadedFile> files() const;
       boost::json::object data() const;
+      boost::json::object query() const;
     
     private:
       Request(const http::request<http::string_body>& req);
       http::request<http::string_body> httpReq_;
-      boost::json::object parsed_json_;
+      boost::json::object data_;
+      boost::json::object query_;
       std::vector<UploadedFile> parsed_files_;
       void parse_request_();
       void parse_query_params_();

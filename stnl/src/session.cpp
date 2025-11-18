@@ -88,12 +88,12 @@ http::message_generator Session::HandleRequest(Request& req) {
     if (it == server_->GetRouter().end())
     {
         std::cout << "HandleRequest: Not Found " << std::string(full_target) << std::endl;
-        return Server::Response(req, http::status::not_found, "Not Found (HTTP 404)");
+        return Server::Response(req, "Not Found (HTTP 404)", http::status::not_found);
     }
     // Run the middleware chain before handler
     if (!ApplyMiddlewares(req)) {
         std::cout << "HandleRequest: Middleware reject " << std::string(full_target) << std::endl;  // FIXED: Added space
-        return Server::Response(req, http::status::forbidden, "Forbidden");
+        return Server::Response(req, "Forbidden", http::status::forbidden);
     }
 
     // FIXED: Full "return"
