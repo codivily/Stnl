@@ -1,10 +1,15 @@
 # Main executable
-add_executable(app
-  main.cpp
-  server_main.cpp
-  ticker.cpp
+
+set(SOURCES
+  src/main.cpp
+  src/server_main.cpp
+  src/ticker.cpp
 )
 
+# Headers directory
+include_directories(include)
+
+add_executable(app ${SOURCES})
 
 # Link to STNL lib
 target_link_libraries(app
