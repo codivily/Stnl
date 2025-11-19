@@ -24,7 +24,7 @@ namespace STNL {
         void OnRead(beast::error_code ec, std::size_t bytes_transferred);
         void OnWrite(beast::error_code ec, std::size_t bytes_transferred);
         http::message_generator HandleRequest(Request& req);
-        bool ApplyMiddlewares(Request& req);
+        boost::optional<http::message_generator> ApplyMiddlewares(Request& req);
     
         beast::tcp_stream stream_;  // Fixed typo: was "stram_"
         beast::flat_buffer buffer_;

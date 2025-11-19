@@ -4,6 +4,7 @@ set(SOURCES
   src/main.cpp
   src/server_main.cpp
   src/ticker.cpp
+  src/database.cpp
 )
 
 # Headers directory
@@ -19,5 +20,6 @@ target_link_libraries(app
     Boost::filesystem
     Boost::json
     Boost::url
+    libpqxx::pqxx
     stnl
 )

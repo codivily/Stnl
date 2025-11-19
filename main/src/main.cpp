@@ -3,15 +3,19 @@
 
 #include "server_main.hpp"
 #include "ticker.hpp"
+#include "database.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/beast/http.hpp>
 #include <iostream>
 #include <thread>
 
 
 namespace fs = boost::filesystem;
 namespace asio = boost::asio;
+namespace http = boost::beast::http;
+
 using Logger = STNL::Logger;
 
 int main(int argc, char* argv[]) {
@@ -26,7 +30,12 @@ int main(int argc, char* argv[]) {
     Logger::Inf("::main:: Server's rootDirPath: " + rootDirPath.string());
 
     std::shared_ptr<STNL::Server> server = std::make_shared<STNL::Server>(ioc, endpoint, rootDirPath);
-
+    server->UseMiddleware([](STNL::Request& req) -> boost::optional<http::message_generator> {
+        Logger::Inf("AuthMiddleware: Incoming request for " + std::string(req.GetHttpReq().target()));
+        //return boost::optional<http::message_generator>{std::move(STNL::Server::Response(req, "Unauthorized", http::status::unauthorized))};
+        return boost::none;
+    });
+    server->AddModule<Database>();
     server->AddModule<ServerMain>();
     server->AddModule<Ticker>();
     server->Run();

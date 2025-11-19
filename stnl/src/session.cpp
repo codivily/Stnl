@@ -2,6 +2,7 @@
 #include "stnl/core.hpp"
 #include "stnl/request.hpp"
 #include "stnl/session.hpp"
+#include "stnl/logger.hpp"
 
 #include <boost/beast/http/read.hpp>  // For async_read
 #include <boost/beast/http/write.hpp>  // For async_write
@@ -62,14 +63,15 @@ void Session::OnWrite(beast::error_code ec, std::size_t) {  // bytes_transferred
     }
 }
 
-bool Session::ApplyMiddlewares(Request& req) {
+boost::optional<http::message_generator> Session::ApplyMiddlewares(Request& req) {
     const std::vector<Middleware>& middlewares = server_->GetMiddlewares();
     for (const Middleware& mw : middlewares) {  // Fixed: was "c" for copy
-        if (!mw(req)) {
-            return false;  // Stop processing if middleware rejects
+        boost::optional<http::message_generator> result = mw(req);
+        if (result.has_value()) {
+            return std::move(result);
         }
     }
-    return true;
+    return boost::none;
 }
 
 http::message_generator Session::HandleRequest(Request& req) {
@@ -91,12 +93,11 @@ http::message_generator Session::HandleRequest(Request& req) {
         return Server::Response(req, "Not Found (HTTP 404)", http::status::not_found);
     }
     // Run the middleware chain before handler
-    if (!ApplyMiddlewares(req)) {
-        std::cout << "HandleRequest: Middleware reject " << std::string(full_target) << std::endl;  // FIXED: Added space
-        return Server::Response(req, "Forbidden", http::status::forbidden);
+    boost::optional<http::message_generator> result = ApplyMiddlewares(req);
+    if (result.has_value()) {
+        Logger::Dbg("HandleRequest: Middleware rejected request: " + std::string(full_target));
+        return std::move(result.value());
     }
-
-    // FIXED: Full "return"
     return it->second(req);
 }
 
