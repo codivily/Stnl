@@ -6,6 +6,7 @@
 #include "stnl/server.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/middleware.hpp"
+#include "stnl/config.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -38,13 +39,30 @@ int main(int argc, char* argv[]) {
     Logger::Init(ioc);
 
     tcp::endpoint endpoint{tcp::v4(), 8080};
-
+    
     fs::path rootDirPath(argv[0]);
     rootDirPath = fs::canonical(rootDirPath);
     rootDirPath = rootDirPath.parent_path();
     Logger::Inf("::main:: Server's rootDirPath: " + rootDirPath.string());
+    
+    if (fs::exists(rootDirPath / "config.local.json")) {
+        STNL::Config::Init(rootDirPath / "config.local.json");
+    } 
+    else if (fs::exists(rootDirPath / "config.json")) {
+        STNL::Config::Init(rootDirPath / "config.json");
+    } 
+    else {
+        STNL::Config::Init(rootDirPath / "config.json");
+    }
+
+    boost::optional<std::string> serverHost = STNL::Config::Value<std::string>("server.host", boost::optional<std::string>("127.0.0.1"));
+    boost::optional<int> serverPort = STNL::Config::Value<int>("server.port", boost::optional<int>(8080));
+    if (serverHost) { endpoint.address(asio::ip::make_address(serverHost.value())); }
+    if (serverPort) { endpoint.port(serverPort.value()); }
+    Logger::Inf("::main:: Server listening on " + endpoint.address().to_string() + ":" + std::to_string(endpoint.port()));
 
     std::shared_ptr<STNL::Server> server = std::make_shared<STNL::Server>(ioc, endpoint, rootDirPath);
+
     server->Use<BasicMiddleware>();
     server->AddModule<Database>();
     server->AddModule<ServerMain>();
@@ -60,9 +78,6 @@ int main(int argc, char* argv[]) {
     for (unsigned int i = 0; i < numThreads; ++i) {
         threads.emplace_back([&ioc] { ioc.run(); });
     }
-
-    Logger::Inf("::main::  Server started on port 8080 with " + std::to_string(numThreads) + " threads.");
-    
     /* Wait for threads **/
     for (std::thread& t : threads) { t.join(); }
     

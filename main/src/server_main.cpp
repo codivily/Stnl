@@ -55,8 +55,9 @@ http::message_generator ServerMain::ApiPostData(const STNL::Request& req) {
 
 void ServerMain::Setup() {
   Logger::Dbg("ServerMain::Setup()");
-  GetServer()->Get("/", [this](const STNL::Request& req) -> http::message_generator { return this->WebGetHome(req); });
-  GetServer()->Post("/api/data", [this](const STNL::Request& req) -> http::message_generator { return this->ApiPostData(req); });
+  std::shared_ptr<ServerMain> self = shared_from_this();
+  GetServer()->Get("/", [self](const STNL::Request& req) -> http::message_generator { return self->WebGetHome(req); });
+  GetServer()->Post("/api/data", [self](const STNL::Request& req) -> http::message_generator { return self->ApiPostData(req); });
 }
 
 

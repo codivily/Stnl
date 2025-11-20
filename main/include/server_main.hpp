@@ -10,7 +10,7 @@
 
 namespace asio = boost::asio;
 
-class ServerMain: public STNL::STNLModule {
+class ServerMain: public STNL::STNLModule, public std::enable_shared_from_this<ServerMain> {
   
   public:
     inline static volatile const char sType{};

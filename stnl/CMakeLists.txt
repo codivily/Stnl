@@ -7,6 +7,7 @@ add_library(stnl
         src/server.cpp
         src/request.cpp
         src/middleware.cpp
+        src/config.cpp
         src/utils.cpp
 )
 
