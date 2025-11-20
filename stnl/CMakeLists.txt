@@ -6,6 +6,7 @@ add_library(stnl
         src/logger.cpp
         src/server.cpp
         src/request.cpp
+        src/middleware.cpp
         src/utils.cpp
 )
 

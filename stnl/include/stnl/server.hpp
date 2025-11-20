@@ -24,6 +24,7 @@ namespace STNL {
     
 class STNLModule; // forward delcaration
 class Request; // forward declaration
+class Middleware; // forward declaration
 
 struct CharPtrHash {
     std::size_t operator()(volatile const void* key) const noexcept {
@@ -45,8 +46,7 @@ public:
     static http::message_generator Response(const Request& req, fs::path file_path, std::string content_type, http::status status_code = http::status::ok);
     static http::message_generator Response(const Request& req, const boost::json::object& data, http::status status_code = http::status::ok);
 
-    void UseMiddleware(Middleware middleware);
-    const std::vector<Middleware>& GetMiddlewares() const; 
+    
     const Router& GetRouter() const;
     void Get(std::string path, RouteHandler handler);
     void Post(std::string path, RouteHandler handler);
@@ -54,6 +54,15 @@ public:
     void Delete(std::string path, RouteHandler handler);
     void Options(std::string path, RouteHandler handler);
     
+    template <typename MiddlewareType>
+    void Use()
+    {
+        static_assert(std::is_base_of_v<Middleware, MiddlewareType>, "MiddlewareType must inherit from Middleware");
+        // std::unique_ptr<Middleware> mw = std::make_unique<MiddlewareType>(shared_from_this());
+        middlewares_.push_back(std::make_unique<MiddlewareType>(shared_from_this()));
+    }
+    const std::vector<std::unique_ptr<Middleware>>& GetMiddlewares() const; 
+
     template <typename ModuleType>
     void AddModule()
     {
@@ -84,6 +93,7 @@ public:
 
 private:
     void SetupModules();
+    void SetupMiddlewares();
     void LaunchModules();
     void DoAccept();
     void OnAccept(beast::error_code ec, tcp::socket socket);
@@ -94,7 +104,7 @@ private:
     asio::io_context& ioc_;
     tcp::acceptor acceptor_;  // Fixed: was missing type in original
     Router router_;
-    std::vector<Middleware> middlewares_;
+    std::vector<std::unique_ptr<Middleware>> middlewares_;
     fs::path rootDirPath_;
 };
 

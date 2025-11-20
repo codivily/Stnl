@@ -3,6 +3,7 @@
 #include "stnl/request.hpp"
 #include "stnl/session.hpp"
 #include "stnl/logger.hpp"
+#include "stnl/middleware.hpp"
 
 #include <boost/beast/http/read.hpp>  // For async_read
 #include <boost/beast/http/write.hpp>  // For async_write
@@ -64,9 +65,8 @@ void Session::OnWrite(beast::error_code ec, std::size_t) {  // bytes_transferred
 }
 
 boost::optional<http::message_generator> Session::ApplyMiddlewares(Request& req) {
-    const std::vector<Middleware>& middlewares = server_->GetMiddlewares();
-    for (const Middleware& mw : middlewares) {  // Fixed: was "c" for copy
-        boost::optional<http::message_generator> result = mw(req);
+    for (const std::unique_ptr<Middleware>& mw : server_->GetMiddlewares()) { 
+        boost::optional<http::message_generator> result = mw->invoke(req);
         if (result.has_value()) {
             return std::move(result);
         }
@@ -75,8 +75,6 @@ boost::optional<http::message_generator> Session::ApplyMiddlewares(Request& req)
 }
 
 http::message_generator Session::HandleRequest(Request& req) {
-    std::cout << httpReq_.method() << ": " << std::string(httpReq_.target()) << std::endl;
-
     // FIXED: Extract path-only (strip query) for routing
     std::string_view full_target{httpReq_.target()};
     std::string_view path = full_target;
@@ -84,18 +82,15 @@ http::message_generator Session::HandleRequest(Request& req) {
     if (query_pos != std::string_view::npos) {
         path = full_target.substr(0, query_pos);
     }
-
     Route key{httpReq_.method(), std::string(path)};  // Use path-only
     auto it = server_->GetRouter().find(key);
     if (it == server_->GetRouter().end())
     {
-        std::cout << "HandleRequest: Not Found " << std::string(full_target) << std::endl;
         return Server::Response(req, "Not Found (HTTP 404)", http::status::not_found);
     }
     // Run the middleware chain before handler
     boost::optional<http::message_generator> result = ApplyMiddlewares(req);
     if (result.has_value()) {
-        Logger::Dbg("HandleRequest: Middleware rejected request: " + std::string(full_target));
         return std::move(result.value());
     }
     return it->second(req);

@@ -20,10 +20,6 @@ namespace STNL
     using HttpRequestBody = http::string_body;
     using HttpRequest = http::request<HttpRequestBody>;
     
-    // Middleware type: a function that takes request and response by reference.
-    // It returns true to continue, false to stop (short-circuit).
-    using Middleware = std::function<boost::optional<http::message_generator>(Request&)>;
-    
     // HttpHandler type: processes the request and populate the response.
     using RouteHandler = std::function<http::message_generator(const Request&)>;
     

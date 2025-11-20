@@ -1,9 +1,11 @@
-#include "stnl/server.hpp"
-#include "stnl/logger.hpp"
 
 #include "server_main.hpp"
 #include "ticker.hpp"
 #include "database.hpp"
+
+#include "stnl/server.hpp"
+#include "stnl/logger.hpp"
+#include "stnl/middleware.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -18,6 +20,19 @@ namespace http = boost::beast::http;
 
 using Logger = STNL::Logger;
 
+ class BasicMiddleware : public STNL::Middleware {
+  public:
+    BasicMiddleware(std::shared_ptr<STNL::Server> server) : STNL::Middleware(std::move(server)) {}
+    boost::optional<http::message_generator> invoke(STNL::Request& req) override {
+        Logger::Inf("BasicMiddleware: Request for " + std::string(req.GetHttpReq().target()));
+        return boost::none; // Continue processing
+    }
+
+    void Setup() override {
+        Logger::Inf("BasicMiddleware::Setup()");
+    }
+ };
+
 int main(int argc, char* argv[]) {
     asio::io_context ioc;
     Logger::Init(ioc);
@@ -30,11 +45,7 @@ int main(int argc, char* argv[]) {
     Logger::Inf("::main:: Server's rootDirPath: " + rootDirPath.string());
 
     std::shared_ptr<STNL::Server> server = std::make_shared<STNL::Server>(ioc, endpoint, rootDirPath);
-    server->UseMiddleware([](STNL::Request& req) -> boost::optional<http::message_generator> {
-        Logger::Inf("AuthMiddleware: Incoming request for " + std::string(req.GetHttpReq().target()));
-        //return boost::optional<http::message_generator>{std::move(STNL::Server::Response(req, "Unauthorized", http::status::unauthorized))};
-        return boost::none;
-    });
+    server->Use<BasicMiddleware>();
     server->AddModule<Database>();
     server->AddModule<ServerMain>();
     server->AddModule<Ticker>();

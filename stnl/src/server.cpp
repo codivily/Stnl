@@ -3,6 +3,7 @@
 #include "stnl/session.hpp"
 #include "stnl/server.hpp"
 #include "stnl/request.hpp"
+#include "stnl/middleware.hpp"
 
 
 #include <boost/beast/version.hpp>
@@ -97,12 +98,7 @@ namespace STNL
         AddRoute(http::verb::options, std::move(path), std::move(handler)); // Fixed: options (not option)
     }
 
-    void Server::UseMiddleware(Middleware middleware)
-    {
-        middlewares_.push_back(std::move(middleware));
-    }
-
-    const std::vector<Middleware> &Server::GetMiddlewares() const
+    const std::vector<std::unique_ptr<Middleware>> &Server::GetMiddlewares() const
     {
         return middlewares_;
     }
@@ -140,6 +136,12 @@ namespace STNL
         }   
     }
 
+    void Server::SetupMiddlewares() {
+        for (const std::unique_ptr<Middleware>& mw : middlewares_) {
+            if (mw) { mw->Setup(); }
+        }
+    }
+
     void Server::LaunchModules() {
         for (const std::shared_ptr<STNLModule>& m : modulesVec_) {
             if (m) {
@@ -157,6 +159,7 @@ namespace STNL
     void Server::Run()
     {
         SetupModules();
+        SetupMiddlewares();
         LaunchModules();
         DoAccept();
     }
