@@ -1,14 +1,16 @@
 # STNL Library
 add_library(stnl
     STATIC
+        src/utils.cpp
+        src/logger.cpp
         src/stnl_module.cpp
         src/session.cpp
-        src/logger.cpp
         src/server.cpp
         src/request.cpp
         src/middleware.cpp
         src/config.cpp
-        src/utils.cpp
+        src/column.cpp
+        src/blueprint.cpp
 )
 
 # Include directories (public for users of the lib)
