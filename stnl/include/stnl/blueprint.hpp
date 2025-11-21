@@ -1,3 +1,9 @@
+#ifndef STNL_BLUEPRINT_HTPP
+#define STNL_BLUEPRINT_HTPP
+
+
+#include "column.hpp"
+
 #include <boost/optional.hpp>
 
 #include <map>
@@ -5,8 +11,6 @@
 #include <string>
 
 namespace STNL {
-
-  class Column; // Forward declration
   class BigIntProxy; // Forward declaration
   class IntegerProxy; // Forward declaration
   class SmallIntProxy; // Forward declaration
@@ -17,12 +21,12 @@ namespace STNL {
   class BooleanProxy; // Forward declaration
   class DateProxy; // Forward declaration
   class TimestampProxy; // Forward declration
-  class UUIDProxy;
-  class TextProxy;
+  class UUIDProxy; // Forward declaration
+  class TextProxy; // Forward declaration
 
   class Blueprint {
     public:
-      explicit Blueprint(std::string tableName);
+      explicit Blueprint(const std::string tableName);
       virtual ~Blueprint() = default;
 
       BigIntProxy BigInt(std::string name);
@@ -46,3 +50,5 @@ namespace STNL {
 
   };
 }
+
+#endif //STNL_BLUEPRINT_HTPP

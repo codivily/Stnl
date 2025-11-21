@@ -11,7 +11,7 @@
 
 namespace STNL {
 
-  Blueprint::Blueprint(std::string tableName) : tableName_(std::move(tableName)) {}
+  Blueprint::Blueprint(const std::string tableName) : tableName_(std::move(tableName)) {}
   
   Column& Blueprint::GetOrAddColumn(std::string realName) {
     std::string name = Utils::StringToLower(realName);

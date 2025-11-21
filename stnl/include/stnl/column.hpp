@@ -48,8 +48,14 @@ namespace STNL {
         col.name = name;
         return static_cast<Derived&>(*this);
       }
-      Derived& Nullable(bool v = true) {
-        col.nullable = v;
+      
+      Derived& Null() {
+        col.nullable = true;
+        return static_cast<Derived&>(*this);
+      }
+
+      Derived& NotNull() {
+        col.nullable = false;
         return static_cast<Derived&>(*this);
       }
 

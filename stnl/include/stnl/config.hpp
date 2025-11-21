@@ -1,4 +1,5 @@
-
+#ifndef STNL_CONFIG_HPP
+#define STNL_CONFIG_HPP
 
 #include <boost/json.hpp>
 #include <boost/optional.hpp>
@@ -62,3 +63,5 @@ namespace STNL {
       Config& operator=(const Config&) = delete;
   };
 }
+
+#endif // STNL_CONFIG_HPP

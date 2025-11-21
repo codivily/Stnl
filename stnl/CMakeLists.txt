@@ -11,6 +11,7 @@ add_library(stnl
         src/config.cpp
         src/column.cpp
         src/blueprint.cpp
+        src/migrator.cpp
 )
 
 # Include directories (public for users of the lib)
@@ -28,4 +29,5 @@ target_link_libraries(stnl
     PRIVATE
         Boost::json
         Boost::url
+        libpqxx::pqxx
 )
