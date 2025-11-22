@@ -1,0 +1,34 @@
+# .clang-format
+---
+# 1. Base style for indentation and brackets (Closest to Allman)
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+
+# 2. Bracket Handling (Allman-like for functions, classes, etc.)
+# This is the key setting for braces on a new line.
+BreakBeforeBraces: Allman
+
+# 3. Indentation of braces (Needed for the Allman style)
+AllowShortBlocksOnASingleLine: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeWhile: true
+  IndentBraces: false
+
+# 4. Specific control flow wrapping (to force control flow on separate lines)
+BreakBeforeElse: true
+
+# 5. Handling of short statements (like single-line returns)
+# ClangFormat struggles with enforcing braces *only* on single-line returns, 
+# but this helps with overall style.
+AllowShortIfStatementsOnASingleLine: WithoutElse

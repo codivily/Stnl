@@ -55,7 +55,7 @@ namespace STNL {
         case ColumnType::Date: return "DATE";
         case ColumnType::Timestamp:
             // Use col.length for fractional second precision (0-6)
-            return std::format("TIMESTAMP({}) WITHOUT TIME ZONE", col.length); 
+            return std::format("TIMESTAMP({}) WITH TIME ZONE", col.precision); 
         case ColumnType::UUID: return "UUID";
         case ColumnType::Bit: return std::format("BIT({})", col.length);
         case ColumnType::Undefined: 
@@ -75,39 +75,46 @@ namespace STNL {
     return constraints;
   }
 
-    std::string Migrator::GenerateCreateSQL(Blueprint& bp) {
-        std::stringstream ss;
-        ss << std::format("CREATE TABLE {} (\n", bp.GetTableName());
-        
-        const auto& columns = bp.GetColumns();
-        size_t i = 0;
-        for (const auto& pair : columns) {
-            const Column& col = pair.second;
-            ss << std::format("  {} {}{}", col.realName, GenerateSQLType(col), GenerateSQLConstraints(col));
-            if (i < columns.size() - 1) {
-                ss << ",";
-            }
-            ss << "\n";
-            i++;
+
+
+  std::string Migrator::GenerateCreateSQL(Blueprint& bp) {
+      std::stringstream ss;
+      ss << std::format("CREATE TABLE {} (\n", bp.GetTableName());
+      const auto& columns = bp.GetColumns();
+      size_t i = 0;
+      for (const auto& pair : columns) {
+        const Column& col = pair.second;
+        ss << std::format("  {} {}{}", col.realName, GenerateSQLType(col), GenerateSQLConstraints(col));
+        if (i < columns.size() - 1) {
+          ss << ",";
         }
-        ss << ");";
-        return Utils::FixIndent(ss.str());
+        ss << "\n";
+        i++;
+      }
+      ss << ");";
+      return Utils::FixIndent(ss.str());
     }
 
     // Helper to check if type and type parameters match (Length, Precision, Identity)
     static bool ColumnTypeAndParamsMatch(const Column& current, const Column& desired) {
-        if (current.type != desired.type) return false;
-        
-        if (desired.type == ColumnType::Numeric) {
-            if (current.precision != desired.precision || current.scale != desired.scale) return false;
-        } else if (desired.type == ColumnType::Varchar || 
-                  desired.type == ColumnType::Char || 
-                  desired.type == ColumnType::Bit || 
-                  desired.type == ColumnType::Timestamp) {
-            if (current.length != desired.length) return false;
+        if (current.type != desired.type) {
+            Logger::Dbg() << "type-mismatch: " << current.name;
+            return false;
         }
-        if (current.identity != desired.identity) return false;
-
+        if (desired.type == ColumnType::Numeric) {
+            if (current.precision != desired.precision || current.scale != desired.scale) {
+                Logger::Dbg() << "numberic-precision-mismatch: " << current.name;
+                return false;
+            }
+        }
+        else if (desired.type == ColumnType::Varchar || 
+                  desired.type == ColumnType::Char || 
+                  desired.type == ColumnType::Bit) {
+            if (current.length != desired.length) {
+                Logger::Dbg() << "(varchar|char|bit)-length-mismatch: " << current.name;
+                return false;
+            }
+        }
         return true;
     }
     
@@ -149,25 +156,43 @@ namespace STNL {
             
             // A. Column does not exist -> ADD COLUMN
             if (it == currentColumns.end()) {
-                std::string addSQL = STNL::Utils::FixIndent(std::format(R"(
+                std::string addSQL = Utils::FixIndent(std::format(R"(
                     ALTER TABLE {} ADD COLUMN {} {}{};
                 )", tableName, desiredCol.realName, GenerateSQLType(desiredCol), GenerateSQLConstraints(desiredCol)));
                 alterStatements.push_back(addSQL);
-                Logger::Inf() << std::format("Migrator: ADD COLUMN '{}' to '{}'.", desiredCol.realName, tableName);
+                Logger::Inf() << std::format("Migrator: {}", addSQL);
                 continue;
             }
             
             // B. Column exists -> Check for MODIFICATIONS
             const Column& currentCol = it->second;
 
-            // Check 1: Type and Parameters (Length, Precision, Identity)
+            // Check 1: Type and Parameters (Length, Precision)
             if (!ColumnTypeAndParamsMatch(currentCol, desiredCol)) {
                 // Generate ALTER COLUMN TYPE statement
-                std::string typeSQL = STNL::Utils::FixIndent(std::format(R"(
+                std::string typeSQL = Utils::FixIndent(std::format(R"(
                     ALTER TABLE {} ALTER COLUMN {} TYPE {};
                 )", tableName, desiredCol.realName, GenerateSQLType(desiredCol)));
+
                 alterStatements.push_back(typeSQL);
-                Logger::Inf() << std::format("Migrator: ALTER COLUMN '{}' TYPE in '{}'.", desiredCol.realName, tableName);
+                Logger::Inf() << std::format("Migrator: {}", typeSQL);
+            }
+
+            // check 2: Identity check
+            if (currentCol.identity != desiredCol.identity) {
+                std::string identitySQL;
+                if (desiredCol.identity) {
+                    identitySQL = Utils::FixIndent(std::format(R"(
+                        ALTER TABLE {} ALTER COLUMN {} ADD GENERATED BY DEFAULT AS IDENTITY
+                    )", tableName, desiredCol.realName));
+                }
+                else {
+                    identitySQL = Utils::FixIndent(std::format(R"(
+                        ALTER TABLE {} ALTER COLUMN {} DROP IDENTITY
+                    )", tableName, desiredCol.realName));
+                }
+                alterStatements.push_back(identitySQL);
+                Logger::Inf() << std::format("Migrator: {}", identitySQL);
             }
 
             // Check 2: Nullability (Requires separate ALTER commands in PostgreSQL)
@@ -179,21 +204,29 @@ namespace STNL {
                     nullSQL = std::format("ALTER TABLE {} ALTER COLUMN {} SET NOT NULL;", tableName, desiredCol.realName);
                 }
                 alterStatements.push_back(nullSQL);
-                Logger::Inf() << std::format("Migrator: ALTER COLUMN '{}' NULLABILITY in '{}'.", desiredCol.realName, tableName);
+                Logger::Inf() << std::format("Migrator: {}", nullSQL);
             }
             
             // Check 3: Default Value
-            if (currentCol.defaultValue != desiredCol.defaultValue) {
+            
+            std::string desiredDefaultValue = std::string(desiredCol.defaultValue);
+            if (desiredCol.type == ColumnType::UUID &&
+                desiredCol.identity &&
+                desiredCol.defaultValue.empty()) {
+                  desiredDefaultValue = std::string("uuidv7()");
+            }
+
+            if (currentCol.defaultValue != desiredDefaultValue) {
                 std::string defaultSQL;
-                if (desiredCol.defaultValue.empty()) {
+                if (desiredDefaultValue.empty()) {
                     // Remove default
                     defaultSQL = std::format("ALTER TABLE {} ALTER COLUMN {} DROP DEFAULT;", tableName, desiredCol.realName);
                 } else {
                     // Set or change default
-                    defaultSQL = std::format("ALTER TABLE {} ALTER COLUMN {} SET DEFAULT {};", tableName, desiredCol.realName, desiredCol.defaultValue);
+                    defaultSQL = std::format("ALTER TABLE {} ALTER COLUMN {} SET DEFAULT {};", tableName, desiredCol.realName, desiredDefaultValue);
                 }
                 alterStatements.push_back(defaultSQL);
-                Logger::Inf() << std::format("Migrator: ALTER COLUMN '{}' DEFAULT in '{}'.", desiredCol.realName, tableName);
+                Logger::Inf() << std::format("Migrator: {}", defaultSQL);
             }
         }
 
@@ -204,11 +237,9 @@ namespace STNL {
         }
 
         Logger::Inf() << std::format("Migrator: Applying {} change(s) to table '{}'.", alterStatements.size(), tableName);
-        
         // Execute all statements in order
         for (const std::string& sql : alterStatements) {
-            // Use FixIndent for clean logging and execution
-            std::string fixedSQL = STNL::Utils::FixIndent(sql); 
+            std::string fixedSQL = Utils::FixIndent(sql); 
             QResult r = db.Exec(fixedSQL);
             if (!r.ok) {
                 Logger::Err() << std::format("Migrator: Failed ALTER SQL: {} Error: {}", fixedSQL, r.msg);

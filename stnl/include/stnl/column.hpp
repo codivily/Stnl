@@ -121,13 +121,11 @@ namespace STNL {
   class TimestampProxy : public ColumnProxy<TimestampProxy> {
     public:
       TimestampProxy(Column& c);
-      TimestampProxy& Precision(unsigned short v);
   };
 
   class UUIDProxy : public ColumnProxy<UUIDProxy> {
     public:
       UUIDProxy(Column& c);
-      UUIDProxy& Identity(bool v = true);
   };
 
   class TextProxy : public ColumnProxy<TextProxy> {

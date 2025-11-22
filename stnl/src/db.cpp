@@ -68,7 +68,7 @@ namespace STNL {
         WHERE LOWER(table_name) = LOWER(')" + pqxx::to_string(tableName) + R"(')
         AND table_schema = CURRENT_SCHEMA;
     )");
-    QResult r = this->Exec(qSQL, false);
+    QResult r = this->Exec(qSQL);
     if (!r.ok) {
       throw std::runtime_error("Failed to query table schema for " + std::string(tableName) + ": " + r.msg);
     }
@@ -170,7 +170,7 @@ namespace STNL {
           else if (dataType == "date") { col.type = ColumnType::Date; }
           else if (dataType.find("timestamp") != std::string::npos) { 
               col.type = ColumnType::Timestamp;
-              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(6);
+              col.length = row[ColumnIndex::NUMERIC_PRECISION].as<std::size_t>(6);
           }
           else if (dataType == "uuid") { col.type = ColumnType::UUID; }
           else if (dataType == "text") { col.type = ColumnType::Text; }
@@ -205,27 +205,6 @@ namespace STNL {
       bp.AddColumn(std::move(col));
     }
     return bp;
-  }
-
-  std::string DB::GetSQLType(Column& c) {
-      if (c.type == ColumnType::BigInt) { return "BIGINT"; }
-      if (c.type == ColumnType::Integer) { return "Integer"; }
-      if (c.type == ColumnType::SmallInt) { return "SMALINT"; }
-      if (c.type == ColumnType::Numeric) { return "NUMERIC(" + std::to_string(c.precision) + ", " + std::to_string(c.scale) + ")"; }
-      if (c.type == ColumnType::Bit) { return "BIT(" + std::to_string(c.length) + ")"; }
-      if (c.type == ColumnType::Boolean) { return "BOOLEAN"; }
-      if (c.type == ColumnType::Char) { return "CHAR(" + std::to_string(c.length) + ")"; }
-      if (c.type == ColumnType::Varchar) { return "VARCHAR(" + std::to_string(c.length) + ")"; }
-      if (c.type == ColumnType::Date) { return "DATE"; }
-      if (c.type == ColumnType::Timestamp) { return "TIMESTAMP(" + std::to_string(c.precision) + ")"; }
-      if (c.type == ColumnType::UUID) { return "UUID"; }
-      if (c.type == ColumnType::Text) { return "TEXT"; }
-      if (c.type == ColumnType::Undefined) {
-        Logger::Err() << "DB::GetSQLType:: Undefined ColumnType. ColName: " << c.realName;
-        return "_COLUMN_TYPE_UNDEFINED_";
-      }
-      Logger::Err() << "DB::GetSQLType: Unknown ColumnType. ColName: " << c.realName;
-      return "_COLUMN_TYPE_UNKNOWN_";
   }
 
 }

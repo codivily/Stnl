@@ -96,22 +96,10 @@ namespace STNL
 
   TimestampProxy::TimestampProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Timestamp;
-    c.precision = 6;
-  }
-
-  TimestampProxy& TimestampProxy::Precision(unsigned short v) {
-    if (v > 6) { v = 6; } // PostgreSQL maximum precision is 6
-    col.precision = v;
-    return *this;
   }
 
   UUIDProxy::UUIDProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::UUID;
-  }
-
-  UUIDProxy& UUIDProxy::Identity(bool v) {
-    col.identity = v;
-    return *this;
   }
 
   TextProxy::TextProxy(Column& c) : ColumnProxy(c) {

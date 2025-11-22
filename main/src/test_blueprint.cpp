@@ -26,12 +26,13 @@ int main(int argc, char argv[]) {
   STNL::Migrator migrator;
   
   migrator.Table("Product", [](STNL::Blueprint& bp) {
-    bp.BigInt("idproduct").Identity();
+    bp.BigInt("idproduct");
+    bp.UUID("uuid").Default("uuidv7()");
     bp.Varchar("name").Length(255).NotNull();
     bp.Numeric("price").Precision(7).Scale(2).Null();
     bp.Text("description").Null();
-    bp.Timestamp("utcdt").NotNull();
-    bp.Bit("active").N(1).NotNull().Default("'1'::BIT");
+    bp.Timestamp("utcdt");
+    bp.Bit("active").N(1).NotNull().Default("'1'::bit(1)");
   });
 
   migrator.Migrate(db);
