@@ -5,8 +5,9 @@
 
 namespace STNL
 {
-  Column::Column(std::string colRealName, ColumnType colType)
-    : realName(colRealName), 
+  Column::Column(std::string colTableName, std::string colRealName, ColumnType colType)
+    : tableName(colTableName),
+      realName(colRealName), 
       type(std::move(colType)),
       length(0),
       identity(false),
@@ -67,6 +68,7 @@ namespace STNL
 
   CharProxy::CharProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Char;
+    col.length = 1;
   }
 
   CharProxy& CharProxy::Length(std::size_t v) {
@@ -94,9 +96,11 @@ namespace STNL
 
   TimestampProxy::TimestampProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Timestamp;
+    c.precision = 6;
   }
 
   TimestampProxy& TimestampProxy::Precision(unsigned short v) {
+    if (v > 6) { v = 6; } // PostgreSQL maximum precision is 6
     col.precision = v;
     return *this;
   }

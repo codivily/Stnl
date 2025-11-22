@@ -13,8 +13,9 @@ namespace STNL
 
   ConnectionPool::ConnectionPool(std::string &connStr, std::size_t maxSize) : connStr_(connStr), maxSize_(maxSize)
   {
+    if (maxSize_ < 1) { maxSize_ = 1; }
     // Pre-fill the bool with connections
-    for (std::size_t i = 0; i < maxSize; ++i)
+    for (std::size_t i = 0; i < maxSize_; ++i)
     {
       try
       {

@@ -24,6 +24,7 @@ namespace STNL {
   };
 
   struct Column {
+      std::string tableName;
       std::string realName;
       std::string name;
       ColumnType type;
@@ -33,7 +34,7 @@ namespace STNL {
       unsigned short precision;
       unsigned short scale;
       std::string defaultValue;
-      Column(std::string colRealName, ColumnType colType);
+      Column(std::string tableName, std::string colRealName, ColumnType colType);
   };
 
   

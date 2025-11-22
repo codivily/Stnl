@@ -1,6 +1,7 @@
 
 
 #include "stnl/db.hpp"
+#include "stnl/blueprint.hpp"
 #include "stnl/connection_pool.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/utils.hpp"
@@ -34,11 +35,10 @@ namespace STNL {
 
   QResult DB::Exec(std::string_view qSQL, bool silent) {
     if (!silent) { Logger::Dbg() << "DB::Exec:qSQL: \n" << qSQL; }
-
-    pqxx::connection* pConn = pool_.GetConnection();
     QResult qResult{pqxx::result{}, false, ""};
+    pqxx::connection* pConn = nullptr;
     try {
-      pqxx::connection* pConn = pool_.GetConnection();
+      pConn = pool_.GetConnection();
       pqxx::nontransaction tx(*pConn);
       pqxx::result r = tx.exec(qSQL);
       qResult.data = std::move(r);
@@ -61,21 +61,171 @@ namespace STNL {
     return fut;
   }
 
-  bool DB::TableExists(std::string_view tableName)
-  {
-    std::string sql = Utils::FixIndent(R"(
+  bool DB::TableExists(std::string_view tableName) {
+    std::string qSQL = Utils::FixIndent(R"(
         SELECT 1
         FROM information_schema.tables
         WHERE LOWER(table_name) = LOWER(')" + pqxx::to_string(tableName) + R"(')
         AND table_schema = CURRENT_SCHEMA;
     )");
-    Logger::Dbg() << "DB::TableExists: Checking existence of table " << tableName;
-    QResult r = this->Exec(sql, false);
-    if (!r.ok) { return false; }
+    QResult r = this->Exec(qSQL, false);
+    if (!r.ok) {
+      throw std::runtime_error("Failed to query table schema for " + std::string(tableName) + ": " + r.msg);
+    }
     return (r.data.size() < 1 ? false : true);
   }
 
-  std::string DB::GetTypeSQL(Column& column) {
-    return "";
+  std::vector<Column> DB::GetTableColumns(std::string_view tableName) {
+      // UPDATED ENUM: Added TABLE_NAME at index 0, shifted all others
+      enum ColumnIndex
+      {
+        TABLE_NAME = 0,
+        COLUMN_NAME = 1,
+        DATA_TYPE = 2,
+        CHAR_MAX_LENGTH = 3,
+        NUMERIC_PRECISION = 4,
+        NUMERIC_SCALE = 5,
+        IS_NULLABLE = 6,
+        COLUMN_DEFAULT = 7,
+        IDENTITY_GENERATION = 8
+      };
+      // Dynamic WHERE clause construction
+      std::string whereClause = "";
+      if (!tableName.empty()) {
+          // If a table name is provided, filter by it (case-insensitive)
+          whereClause = R"(
+          WHERE
+              LOWER(table_name) = LOWER(')" + pqxx::to_string(tableName) + R"(')
+              AND table_schema = CURRENT_SCHEMA()
+          )";
+      } else {
+          // If no table name is provided, query all tables in the current schema
+          whereClause = R"(
+          WHERE
+              table_schema = CURRENT_SCHEMA()
+          )";
+      }
+
+      std::string qSQL = STNL::Utils::FixIndent(R"(
+          SELECT
+              table_name, 
+              column_name,
+              data_type,
+              character_maximum_length,
+              numeric_precision,
+              numeric_scale,
+              is_nullable,
+              column_default,
+              identity_generation
+          FROM
+              information_schema.columns
+      )" + whereClause + R"(
+          ORDER BY
+              table_name,
+              ordinal_position;
+      )");
+      
+      QResult r = this->Exec(qSQL);
+      std::vector<Column> columns;
+      
+      if (!r.ok) {
+          STNL::Logger::Err() << ("DB::GetTableColumns: Error executing query: " + r.msg);
+          throw std::runtime_error("Failed to query table schema: " + r.msg);
+      }
+
+      // Iterate over results and map to Column structures
+      for (const auto& row : r.data) {
+          std::string table = row[ColumnIndex::TABLE_NAME].as<std::string>();
+          std::string colName = row[ColumnIndex::COLUMN_NAME].as<std::string>();
+          std::string dataType = row[ColumnIndex::DATA_TYPE].as<std::string>();
+          std::string isNullable = row[ColumnIndex::IS_NULLABLE].as<std::string>();
+          
+          Column col(table, colName, ColumnType::Undefined); 
+
+          // A. Handle Nullability
+          col.nullable = (isNullable == "YES");
+
+          // B. Handle Data Types and Attributes
+          if (dataType == "bigint") {  col.type = ColumnType::BigInt; }
+          else if (dataType == "integer") { col.type = ColumnType::Integer; }
+          else if (dataType == "smallint") {  col.type = ColumnType::SmallInt;  }
+          else if (dataType == "numeric") {
+              col.type = ColumnType::Numeric;
+              col.precision = row[ColumnIndex::NUMERIC_PRECISION].as<unsigned short>(0); 
+              col.scale = row[ColumnIndex::NUMERIC_SCALE].as<unsigned short>(0);     
+          }
+          else if (dataType == "bit") {
+              col.type = ColumnType::Bit;
+              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(1);
+          }
+          else if (dataType == "character") {
+              col.type = ColumnType::Char;
+              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(0);
+          }
+          else if (dataType == "character varying") {
+              col.type = ColumnType::Varchar;
+              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(255);
+          }
+          else if (dataType == "boolean") { col.type = ColumnType::Boolean; }
+          else if (dataType == "date") { col.type = ColumnType::Date; }
+          else if (dataType.find("timestamp") != std::string::npos) { 
+              col.type = ColumnType::Timestamp;
+              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(6);
+          }
+          else if (dataType == "uuid") { col.type = ColumnType::UUID; }
+          else if (dataType == "text") { col.type = ColumnType::Text; }
+          else {
+              STNL::Logger::Wrn() << ("DB::GetTableColumns: Unsupported data type: " + dataType + " for column " + colName);
+              col.type = ColumnType::Undefined; 
+          }
+
+          // C. Handle IDENTITY 
+          if (row[ColumnIndex::IDENTITY_GENERATION].c_str() && row[ColumnIndex::IDENTITY_GENERATION].c_str()[0] != '\0') {
+              col.identity = true;
+          }
+          
+          // D. Handle Default Value
+          if (row[ColumnIndex::COLUMN_DEFAULT].c_str() && row[ColumnIndex::COLUMN_DEFAULT].c_str()[0] != '\0') {
+              col.defaultValue = row[ColumnIndex::COLUMN_DEFAULT].as<std::string>();
+          }
+
+          columns.push_back(std::move(col));
+      }
+      return columns;
   }
+
+  Blueprint DB::QueryBlueprint(std::string_view tableName) {
+    if (tableName.empty()){
+      STNL::Logger::Err() << "DB::QueryBlueprint: Table name cannot be empty for Blueprint generation.";
+      throw std::invalid_argument("Blueprint generation requires a non-empty table name.");
+    }
+    std::vector<Column> cols = GetTableColumns(tableName);
+    Blueprint bp{std::string(tableName)};
+    for (Column &col : cols) {
+      bp.AddColumn(std::move(col));
+    }
+    return bp;
+  }
+
+  std::string DB::GetSQLType(Column& c) {
+      if (c.type == ColumnType::BigInt) { return "BIGINT"; }
+      if (c.type == ColumnType::Integer) { return "Integer"; }
+      if (c.type == ColumnType::SmallInt) { return "SMALINT"; }
+      if (c.type == ColumnType::Numeric) { return "NUMERIC(" + std::to_string(c.precision) + ", " + std::to_string(c.scale) + ")"; }
+      if (c.type == ColumnType::Bit) { return "BIT(" + std::to_string(c.length) + ")"; }
+      if (c.type == ColumnType::Boolean) { return "BOOLEAN"; }
+      if (c.type == ColumnType::Char) { return "CHAR(" + std::to_string(c.length) + ")"; }
+      if (c.type == ColumnType::Varchar) { return "VARCHAR(" + std::to_string(c.length) + ")"; }
+      if (c.type == ColumnType::Date) { return "DATE"; }
+      if (c.type == ColumnType::Timestamp) { return "TIMESTAMP(" + std::to_string(c.precision) + ")"; }
+      if (c.type == ColumnType::UUID) { return "UUID"; }
+      if (c.type == ColumnType::Text) { return "TEXT"; }
+      if (c.type == ColumnType::Undefined) {
+        Logger::Err() << "DB::GetSQLType:: Undefined ColumnType. ColName: " << c.realName;
+        return "_COLUMN_TYPE_UNDEFINED_";
+      }
+      Logger::Err() << "DB::GetSQLType: Unknown ColumnType. ColName: " << c.realName;
+      return "_COLUMN_TYPE_UNKNOWN_";
+  }
+
 }

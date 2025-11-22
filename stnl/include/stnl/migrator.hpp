@@ -3,6 +3,7 @@
 #define STNL_MIGRATOR_HPP
 
 #include "blueprint.hpp"
+#include "column.hpp"
 
 #include <pqxx/pqxx>
 
@@ -22,6 +23,9 @@ namespace STNL {
     private:
       std::map<std::string, Blueprint> blueprints_;
       void ApplyBlueprint(DB& db, Blueprint& bp);
+      std::string GenerateSQLType(const Column& col);
+      std::string GenerateCreateSQL(Blueprint& bp);
+      std::string GenerateSQLConstraints(const Column& col);
   };
 }
 

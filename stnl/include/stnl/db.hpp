@@ -2,6 +2,7 @@
 #define STNL_DB_UTILS_HPP
 
 #include "connection_pool.hpp"
+#include "blueprint.hpp"
 #include "column.hpp"
 #include <boost/asio.hpp>
 #include <pqxx/pqxx>
@@ -13,7 +14,6 @@
 namespace asio = boost::asio;
 
 namespace STNL {
-  //class ConnectionPool; // Forware declaration
 
   struct QResult
   {
@@ -24,14 +24,16 @@ namespace STNL {
 
   class DB {
     public:
-      DB(std::string& connStr, asio::io_context& ioc, size_t poolSize = 4, size_t numThreads = 6);
+      DB(std::string& connStr, asio::io_context& ioc, size_t poolSize = 4, size_t numThreads = 4);
       ~DB();
       QResult Exec(std::string_view qSQL, bool silent = true);
       std::future<QResult> ExecAsync(std::string_view qSQL, bool silent = true);
       
+      std::vector<Column> GetTableColumns(std::string_view tableName = "");
+      Blueprint QueryBlueprint(std::string_view tableName);
       bool TableExists(std::string_view tableName);
 
-      static std::string GetTypeSQL(Column& column);
+      static std::string GetSQLType(Column& c);
 
     private:
       ConnectionPool pool_;

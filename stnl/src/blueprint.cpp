@@ -13,18 +13,22 @@ namespace STNL {
 
   Blueprint::Blueprint(const std::string tableName) : tableName_(std::move(tableName)) {}
   
-  const std::string& Blueprint::GetTableName() { return tableName_; }
+  std::string& Blueprint::GetTableName() { return tableName_; }
   const std::map<std::string, Column>& Blueprint::GetColumns() { return columns_; }
 
   Column& Blueprint::GetOrAddColumn(std::string realName) {
     std::string name = Utils::StringToLower(realName);
     std::map<std::string, Column>::iterator it = columns_.find(name);
     if (it == columns_.end()) {
-      auto result = columns_.emplace(name, Column{std::move(realName), ColumnType::Undefined});
+      auto result = columns_.emplace(name, Column{this->tableName_, std::move(realName), ColumnType::Undefined});
       // result.second is true (inserted), result.first is the iterator
       return result.first->second;
     }
     return it->second;
+  }
+
+  void Blueprint::AddColumn(Column&& col) {
+    columns_.emplace(col.name, std::move(col));
   }
 
   BigIntProxy Blueprint::BigInt(std::string name) {
