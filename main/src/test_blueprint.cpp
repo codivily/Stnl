@@ -16,11 +16,11 @@ namespace asio = boost::asio;
 using Logger = STNL::Logger;
 
 int main(int argc, char argv[]) {
-  std::string connStr = "dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public";
+  std::string connStr = "dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch";
 
   asio::io_context ioc;
   Logger::Init(ioc);
-  STNL::DB db(connStr, ioc, 4, 4);
+  STNL::DB db(connStr, ioc);
   // STNL::ConnectionPool pool{connStr, 4};
   // auto pCon = std::make_shared<pqxx::connection>("dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public");
   STNL::Migrator migrator;
@@ -33,7 +33,9 @@ int main(int argc, char argv[]) {
     bp.Timestamp("utcdt").NotNull();
     bp.Bit("active").N(1).NotNull().Default("1");
   });
-  migrator.Migrate(db);
+  // migrator.Migrate(db);
+  if (db.TableExists("Product")) { Logger::Dbg() << "::main:: Product table exists"; }
+  else { Logger::Dbg() << "::main:: Product table does not exits"; }
 
   ioc.run(); // thre
 

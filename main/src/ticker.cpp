@@ -28,9 +28,9 @@ int Ticker::GetValue() {
 }
 
 void Ticker::Setup() {
-  Logger::Dbg("Ticker::Setup()");
+  Logger::Dbg() << ("Ticker::Setup()");
 }
 
 void Ticker::Launch() {
-  Logger::Dbg("Ticker::Launch()");
+  Logger::Dbg() << ("Ticker::Launch()");
 }

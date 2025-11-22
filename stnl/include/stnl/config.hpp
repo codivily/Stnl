@@ -1,6 +1,9 @@
 #ifndef STNL_CONFIG_HPP
 #define STNL_CONFIG_HPP
 
+
+#include "logger.hpp"
+
 #include <boost/json.hpp>
 #include <boost/optional.hpp>
 #include <boost/filesystem.hpp>
@@ -15,8 +18,6 @@ namespace json = boost::json;
 namespace fs = boost::filesystem;
 
 namespace STNL {
-
-  class Logger; // forward declaration
 
   class Config {
 
@@ -53,7 +54,7 @@ namespace STNL {
         try {
           return json::value_to<T>(current);
         } catch (const std::exception& e) {
-          Logger::Err("Config::GetValue (\"" + keyPath + "\") conversion error: " + e.what());
+          Logger::Err() << ("Config::GetValue (\"" + keyPath + "\") conversion error: " + e.what());
         }
         return boost::none;
       }
