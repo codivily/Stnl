@@ -12,14 +12,16 @@
 #include <memory>
 
 namespace STNL {
+  class DB;
 
   class Migrator {
     public:
       Migrator() = default;
       void Table(const std::string& tableName, std::function<void(Blueprint&)> adaptFn);
-      void Migrate(std::shared_ptr<pqxx::connection> pCon);
+      void Migrate(DB& db);
     private:
       std::map<std::string, Blueprint> blueprints_;
+      void ApplyBlueprint(DB& db, Blueprint& bp);
   };
 }
 

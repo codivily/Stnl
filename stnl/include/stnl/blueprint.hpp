@@ -28,6 +28,8 @@ namespace STNL {
     public:
       explicit Blueprint(const std::string tableName);
       virtual ~Blueprint() = default;
+      const std::string& GetTableName();
+      const std::map<std::string, Column>& GetColumns();
 
       BigIntProxy BigInt(std::string name);
       IntegerProxy Integer(std::string name);

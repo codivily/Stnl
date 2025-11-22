@@ -12,6 +12,8 @@ add_library(stnl
         src/column.cpp
         src/blueprint.cpp
         src/migrator.cpp
+        src/connection_pool.cpp
+        src/db.cpp
 )
 
 # Include directories (public for users of the lib)

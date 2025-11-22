@@ -74,7 +74,7 @@ namespace STNL {
   class IntegerProxy : public ColumnProxy<IntegerProxy> {
     public: 
       IntegerProxy(Column& c);
-      IntegerProxy& Identity(bool  = true);
+      IntegerProxy& Identity(bool v = true);
   };
 
   class SmallIntProxy : public ColumnProxy<SmallIntProxy> {
@@ -126,6 +126,7 @@ namespace STNL {
   class UUIDProxy : public ColumnProxy<UUIDProxy> {
     public:
       UUIDProxy(Column& c);
+      UUIDProxy& Identity(bool v = true);
   };
 
   class TextProxy : public ColumnProxy<TextProxy> {

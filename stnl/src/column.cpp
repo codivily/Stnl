@@ -105,6 +105,11 @@ namespace STNL
     col.type = ColumnType::UUID;
   }
 
+  UUIDProxy& UUIDProxy::Identity(bool v) {
+    col.identity = v;
+    return *this;
+  }
+
   TextProxy::TextProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Text;
   }

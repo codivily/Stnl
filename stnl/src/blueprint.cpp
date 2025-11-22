@@ -13,6 +13,9 @@ namespace STNL {
 
   Blueprint::Blueprint(const std::string tableName) : tableName_(std::move(tableName)) {}
   
+  const std::string& Blueprint::GetTableName() { return tableName_; }
+  const std::map<std::string, Column>& Blueprint::GetColumns() { return columns_; }
+
   Column& Blueprint::GetOrAddColumn(std::string realName) {
     std::string name = Utils::StringToLower(realName);
     std::map<std::string, Column>::iterator it = columns_.find(name);

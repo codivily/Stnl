@@ -1,13 +1,28 @@
 
 #include "stnl/blueprint.hpp"
 #include "stnl/migrator.hpp"
+#include "stnl/db.hpp"
+#include "stnl/logger.hpp"
 #include "stnl/utils.hpp"
+
+
+#include <boost/asio.hpp>
 
 #include <memory>
 #include <iostream>
 
+namespace asio = boost::asio;
+
+using Logger = STNL::Logger;
+
 int main(int argc, char argv[]) {
-  auto pCon = std::make_shared<pqxx::connection>("dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public");
+  std::string connStr = "dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public";
+
+  asio::io_context ioc;
+  Logger::Init(ioc);
+  STNL::DB db(connStr, ioc, 4, 4);
+  // STNL::ConnectionPool pool{connStr, 4};
+  // auto pCon = std::make_shared<pqxx::connection>("dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public");
   STNL::Migrator migrator;
   
   migrator.Table("Product", [](STNL::Blueprint& bp) {
@@ -18,8 +33,9 @@ int main(int argc, char argv[]) {
     bp.Timestamp("utcdt").NotNull();
     bp.Bit("active").N(1).NotNull().Default("1");
   });
+  migrator.Migrate(db);
 
-  migrator.Migrate(pCon);
+  ioc.run(); // thre
 
   return 0;
 }
