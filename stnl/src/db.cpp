@@ -33,6 +33,10 @@ namespace STNL {
     }
   }
 
+  asio::io_context& DB::GetIOC() {
+    return ioc_;
+  }
+
   QResult DB::Exec(std::string_view qSQL, bool silent) {
     if (!silent) { Logger::Dbg() << "DB::Exec:qSQL: \n" << qSQL; }
     QResult qResult{pqxx::result{}, false, ""};
@@ -54,11 +58,7 @@ namespace STNL {
   }
 
   std::future<QResult> DB::ExecAsync(std::string_view qSQL, bool silent) {
-    using Task = std::packaged_task<QResult()>;
-    auto task = std::make_shared<Task>([this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
-    std::future<QResult> fut = task->get_future();
-    asio::post(ioc_, [task]() { (*task)(); });
-    return fut;
+    return Utils::AsFuture<QResult>(ioc_, [this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
   }
 
   bool DB::TableExists(std::string_view tableName) {

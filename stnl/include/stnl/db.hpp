@@ -4,12 +4,16 @@
 #include "connection_pool.hpp"
 #include "blueprint.hpp"
 #include "column.hpp"
+#include "utils.hpp"
 #include <boost/asio.hpp>
 #include <pqxx/pqxx>
+
+#include <functional>
 
 #include <thread>
 #include <future>
 #include <string>
+#include <memory>
 
 namespace asio = boost::asio;
 
@@ -26,8 +30,14 @@ namespace STNL {
     public:
       DB(std::string& connStr, asio::io_context& ioc, size_t poolSize = 4, size_t numThreads = 4);
       ~DB();
+      asio::io_context& GetIOC();
       QResult Exec(std::string_view qSQL, bool silent = true);
       std::future<QResult> ExecAsync(std::string_view qSQL, bool silent = true);
+
+      template <typename ResultType>
+      std::future<ResultType> AsFuture(std::function<ResultType()> fn) {
+          return Utils::AsFuture<ResultType>(ioc_, std::move(fn));
+      }
       
       std::vector<Column> GetTableColumns(std::string_view tableName = "");
       Blueprint QueryBlueprint(std::string_view tableName);

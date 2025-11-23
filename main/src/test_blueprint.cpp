@@ -8,6 +8,7 @@
 
 #include <boost/asio.hpp>
 
+#include <thread>
 #include <memory>
 #include <iostream>
 
@@ -35,7 +36,32 @@ int main(int argc, char argv[]) {
     bp.Bit("active").N(1).NotNull().Default("'1'::bit(1)");
   });
 
-  migrator.Migrate(db);
+  using QResult = STNL::QResult;
+  using Blueprint = STNL::Blueprint;
+
+  Logger::Dbg() << "::main:: fut1";
+  std::future<QResult> fut1 = db.AsFuture<QResult>([&db]() {
+    Logger::Dbg() << "::main:: fut1 - Thread: " << std::this_thread::get_id();
+    return db.Exec("SELECT NOW()");
+  });
+  Logger::Dbg() << "::main:: fut2";
+  std::future<Blueprint> fut2 = db.AsFuture<Blueprint>([&db]() {
+    Logger::Dbg() << "::main:: fut2 - Thread: " << std::this_thread::get_id();
+    return db.QueryBlueprint("product");
+  });
+  Logger::Dbg() << "::main:: fut1.get()";
+  QResult r = fut1.get();
+  if (r.ok) {
+    for(const auto& row: r.data) {
+      Logger::Inf() << "::main:: DB TIME: " << std::string(row[0].c_str());
+    }
+  }
+  Logger::Dbg() << "::main:: fut2.get()";
+  Blueprint bp = fut2.get();
+  Logger::Inf() << "::main:: Table: " << bp.GetTableName() << ", Columns.size() = " << bp.GetColumns().size();
+
+
+  // migrator.Migrate(db);
   ioc.run(); // thre
 
   return 0;
