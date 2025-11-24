@@ -15,14 +15,38 @@
 
 #include <format>
 #include <string>
+#include <format>
 #include <thread>
 #include <memory>
 #include <future>
+#include <map>
+#include <iostream>
+#include <sstream>
 
 namespace asio = boost::asio;
 namespace json = boost::json;
 
 namespace STNL {
+
+  std::string SelectedFieldIndex::Field(std::string const& fieldName) {
+    fieldToIndex_[std::string{fieldName}] = fieldToIndex_.size();
+    return std::string{fieldName};
+  }
+
+  std::string SelectedFieldIndex::operator()(std::string const& fieldName) {
+    return this->Field(fieldName);
+  }
+
+  unsigned int SelectedFieldIndex::Index(std::string const& fieldName) const {
+    auto it = fieldToIndex_.find(fieldName);
+    if (it == fieldToIndex_.end()) {
+      std::string errMsg =  std::format("SelectedFieldIndex::Index: field with name '{}' not found", fieldName);
+      Logger::Err() << errMsg;
+      throw std::runtime_error(errMsg);
+    }
+    return it->second;
+  }
+
 
   DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
     /* there has to be at least one mandatory thread */
@@ -82,55 +106,23 @@ namespace STNL {
   }
 
   std::vector<Column> DB::GetTableColumns(std::string_view tableName) {
-      // UPDATED ENUM: Added TABLE_NAME at index 0, shifted all others
-      enum ColumnIndex
-      {
-        TABLE_NAME = 0,
-        COLUMN_NAME = 1,
-        DATA_TYPE = 2,
-        CHAR_MAX_LENGTH = 3,
-        NUMERIC_PRECISION = 4,
-        NUMERIC_SCALE = 5,
-        IS_NULLABLE = 6,
-        COLUMN_DEFAULT = 7,
-        IDENTITY_GENERATION = 8
-      };
-      // Dynamic WHERE clause construction
-      std::string whereClause = "";
-      if (!tableName.empty()) {
-          // If a table name is provided, filter by it (case-insensitive)
-          whereClause = R"(
-          WHERE
-              LOWER(table_name) = LOWER(')" + pqxx::to_string(tableName) + R"(')
-              AND table_schema = CURRENT_SCHEMA()
-          )";
-      } else {
-          // If no table name is provided, query all tables in the current schema
-          whereClause = R"(
-          WHERE
-              table_schema = CURRENT_SCHEMA()
-          )";
-      }
-
-      std::string qSQL = STNL::Utils::FixIndent(R"(
-          SELECT
-              table_name, 
-              column_name,
-              data_type,
-              character_maximum_length,
-              numeric_precision,
-              numeric_scale,
-              is_nullable,
-              column_default,
-              identity_generation
-          FROM
-              information_schema.columns
-      )" + whereClause + R"(
-          ORDER BY
-              table_name,
-              ordinal_position;
-      )");
+      SelectedFieldIndex sfi;
       
+      std::vector<std::string> select;
+      select.emplace_back(sfi("table_name"));
+      select.emplace_back(sfi("column_name"));
+      select.emplace_back(sfi("data_type"));
+      select.emplace_back(sfi("character_maximum_length"));
+      select.emplace_back(sfi("numeric_precision"));
+      select.emplace_back(sfi("numeric_scale"));
+      select.emplace_back(sfi("is_nullable"));
+      select.emplace_back(sfi("column_default"));
+      select.emplace_back(sfi("identity_generation"));
+
+      std::vector<std::string> where;
+      where.emplace_back("table_schema = CURRENT_SCHEMA()");
+      if (!tableName.empty()) { where.emplace_back(std::format("LOWER(table_name) = LOWER('{}')", tableName)); }
+      std::string qSQL = std::format("SELECT {} FROM information_schema.columns WHERE {} ORDER BY table_name, ordinal_position", Utils::Join(select, ","), Utils::Join(where, " AND "));
       QResult r = this->Exec(qSQL);
       std::vector<Column> columns;
       
@@ -141,10 +133,10 @@ namespace STNL {
 
       // Iterate over results and map to Column structures
       for (const auto& row : r.data) {
-          std::string table = row[ColumnIndex::TABLE_NAME].as<std::string>();
-          std::string colName = row[ColumnIndex::COLUMN_NAME].as<std::string>();
-          std::string dataType = row[ColumnIndex::DATA_TYPE].as<std::string>();
-          std::string isNullable = row[ColumnIndex::IS_NULLABLE].as<std::string>();
+          std::string table = row[sfi.Index("table_name")].as<std::string>();
+          std::string colName = row[sfi.Index("column_name")].as<std::string>();
+          std::string dataType = row[sfi.Index("data_type")].as<std::string>();
+          std::string isNullable = row[sfi.Index("is_nullable")].as<std::string>();
           
           Column col(table, colName, ColumnType::Undefined); 
 
@@ -157,26 +149,26 @@ namespace STNL {
           else if (dataType == "smallint") {  col.type = ColumnType::SmallInt;  }
           else if (dataType == "numeric") {
               col.type = ColumnType::Numeric;
-              col.precision = row[ColumnIndex::NUMERIC_PRECISION].as<unsigned short>(0); 
-              col.scale = row[ColumnIndex::NUMERIC_SCALE].as<unsigned short>(0);     
+              col.precision = row[sfi.Index("numeric_precision")].as<unsigned short>(0); 
+              col.scale = row[sfi.Index("numeric_scale")].as<unsigned short>(0);     
           }
           else if (dataType == "bit") {
               col.type = ColumnType::Bit;
-              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(1);
+              col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(1);
           }
           else if (dataType == "character") {
               col.type = ColumnType::Char;
-              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(0);
+              col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(0);
           }
           else if (dataType == "character varying") {
               col.type = ColumnType::Varchar;
-              col.length = row[ColumnIndex::CHAR_MAX_LENGTH].as<std::size_t>(255);
+              col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(255);
           }
           else if (dataType == "boolean") { col.type = ColumnType::Boolean; }
           else if (dataType == "date") { col.type = ColumnType::Date; }
           else if (dataType.find("timestamp") != std::string::npos) { 
               col.type = ColumnType::Timestamp;
-              col.length = row[ColumnIndex::NUMERIC_PRECISION].as<std::size_t>(6);
+              col.length = row[sfi.Index("numeric_precision")].as<std::size_t>(6);
           }
           else if (dataType == "uuid") { col.type = ColumnType::UUID; }
           else if (dataType == "text") { col.type = ColumnType::Text; }
@@ -186,15 +178,14 @@ namespace STNL {
           }
 
           // C. Handle IDENTITY 
-          if (row[ColumnIndex::IDENTITY_GENERATION].c_str() && row[ColumnIndex::IDENTITY_GENERATION].c_str()[0] != '\0') {
+          if (row[sfi.Index("identity_generation")].c_str() && row[sfi.Index("identity_generation")].c_str()[0] != '\0') {
               col.identity = true;
           }
           
           // D. Handle Default Value
-          if (row[ColumnIndex::COLUMN_DEFAULT].c_str() && row[ColumnIndex::COLUMN_DEFAULT].c_str()[0] != '\0') {
-              col.defaultValue = row[ColumnIndex::COLUMN_DEFAULT].as<std::string>();
+          if (row[sfi.Index("column_default")].c_str() && row[sfi.Index("column_default")].c_str()[0] != '\0') {
+              col.defaultValue = row[sfi.Index("column_default")].as<std::string>();
           }
-
           columns.push_back(std::move(col));
       }
       return columns;
@@ -234,7 +225,6 @@ namespace STNL {
             obj[name] = nullptr; 
         }
         else {
-            Logger::Dbg() << pqxx::to_string(field.type());
             switch (field.type())
             {
             case PgFieldTypeOID::int4:
@@ -276,7 +266,7 @@ namespace STNL {
     return boost::json::value{std::move(jsonArray)};
   }
 
-  boost::json::value QResult::json() const {
+  boost::json::value QResult::Json() const {
     boost::json::object obj;
     obj["ok"] = this->ok;
     obj["msg"] = this->msg;
@@ -284,8 +274,18 @@ namespace STNL {
     return boost::json::value{std::move(obj)};
   }
 
-  boost::json::value QResult::dataAsJson() const {
+  boost::json::value QResult::DataJson() const {
     if (!this->ok) { return boost::json::value{std::move(boost::json::array{})}; }
     return result_to_json(this->data);
+  }
+
+  std::ostream& operator<<(std::ostream& os, QResult const& qResult) {
+    os << qResult.Json();
+    return os;
+  }
+
+  LogStream& operator<<(LogStream& stream, QResult const& qResult) {
+    stream << qResult.Json();
+    return stream;
   }
 }

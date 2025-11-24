@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <limits>
+#include <vector>
 
 namespace STNL
 {
@@ -53,6 +54,17 @@ namespace STNL
     std::string tmp{s};
     trim(tmp);
     return tmp;
+  }
+
+  std::string Utils::Join(std::vector<std::string> const& parts, std::string const& separator) {
+    std::stringstream ss;
+    bool bFirst = true;
+    for(const auto& s : parts) {
+      if (!bFirst) { ss << separator; }
+      else { bFirst = false; }
+      ss << s;
+    }
+    return ss.str();
   }
 
   std::string Utils::FixIndent(const std::string_view s) {

@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <string>
 #include <future>
+#include <vector>
 
 namespace asio = boost::asio;
 
@@ -16,6 +17,7 @@ namespace STNL {
       static std::string TrimRight(const std::string_view s);
       static std::string Trim(const std::string_view s);
       static std::string FixIndent(const std::string_view s);
+      static std::string Join(std::vector<std::string>const& parts, std::string const& separator = ";");
       
       template <typename ResultType>
       static std::future<ResultType> AsFuture(asio::io_context& ioc, std::function<ResultType()> fn) {

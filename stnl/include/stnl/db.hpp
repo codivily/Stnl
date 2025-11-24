@@ -5,6 +5,7 @@
 #include "blueprint.hpp"
 #include "column.hpp"
 #include "utils.hpp"
+#include "logger.hpp"
 #include <boost/asio.hpp>
 #include <boost/json.hpp>
 #include <pqxx/pqxx>
@@ -15,6 +16,9 @@
 #include <future>
 #include <string>
 #include <memory>
+#include <map>
+#include <iostream>
+#include <sstream>
 
 namespace asio = boost::asio;
 
@@ -25,9 +29,13 @@ namespace STNL {
     pqxx::result data;
     bool ok;
     std::string msg;
-    boost::json::value json() const;
-    boost::json::value dataAsJson() const;
+    boost::json::value Json() const;
+    boost::json::value DataJson() const;
+    friend std::ostream& operator<<(std::ostream& os, QResult const& qResult);
+    friend LogStream& operator<<(LogStream& stream, QResult const& qResult);
   };
+  std::ostream& operator<<(std::ostream& os, QResult const& qResult);
+  LogStream& operator<<(LogStream& stream, QResult const& qResult);
 
 
   enum PgFieldTypeOID {
@@ -52,6 +60,17 @@ namespace STNL {
     numeric = 1700,
     uuid = 2950,
     jsonb = 3802
+  };
+
+    
+  class SelectedFieldIndex {
+    public:
+      SelectedFieldIndex() = default;
+      std::string Field(std::string const& fieldName);
+      unsigned int Index(std::string const& fieldName) const;
+      std::string operator()(std::string const& fieldName);
+    private:
+      std::unordered_map<std::string, unsigned int> fieldToIndex_;
   };
 
   class DB {
