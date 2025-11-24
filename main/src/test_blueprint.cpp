@@ -7,59 +7,52 @@
 
 
 #include <boost/asio.hpp>
+#include <boost/json.hpp>
 
 #include <thread>
 #include <memory>
 #include <iostream>
+#include <format>
+#include <string>
 
 namespace asio = boost::asio;
+namespace json = boost::json;
 
 using Logger = STNL::Logger;
+using DB = STNL::DB;
+using Migrator = STNL::Migrator;
+using Blueprint = STNL::Blueprint;
+using QResult = STNL::QResult;
 
 int main(int argc, char argv[]) {
-  std::string connStr = "dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=public";
-
+  std::string dbName = "stnl_db";
+  std::string dbUser = "postgres";
+  std::string dbPassword = "!stnl1301";
+  std::string dbHost = "localhost";
+  size_t dbPort = 5432;
+  std::string dbSchema = "public";
+  std::string connStr = DB::GetConnectionString(dbName, dbUser, dbPassword, dbHost, dbPort, dbSchema);
+  
   asio::io_context ioc;
   Logger::Init(ioc);
-  STNL::DB db(connStr, ioc);
+  DB db(connStr, ioc);
   // STNL::ConnectionPool pool{connStr, 4};
   // auto pCon = std::make_shared<pqxx::connection>("dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public");
-  STNL::Migrator migrator;
+  Migrator migrator;
   
-  migrator.Table("Product", [](STNL::Blueprint& bp) {
-    bp.BigInt("idproduct");
+  migrator.Table("Product", [](Blueprint& bp) {
+    bp.BigInt("id").Identity();
     bp.UUID("uuid").Default("uuidv7()");
     bp.Varchar("name").Length(255).NotNull();
     bp.Numeric("price").Precision(7).Scale(2).Null();
     bp.Text("description").Null();
-    bp.Timestamp("utcdt");
+    bp.Timestamp("utcdt").Default("CURRENT_TIMESTAMP");
     bp.Bit("active").N(1).NotNull().Default("'1'::bit(1)");
   });
 
-  using QResult = STNL::QResult;
-  using Blueprint = STNL::Blueprint;
+  QResult r = db.ExecAsync("SELECT * FROM product ORDER BY utcdt DESC").get();
 
-  Logger::Dbg() << "::main:: fut1";
-  std::future<QResult> fut1 = db.AsFuture<QResult>([&db]() {
-    Logger::Dbg() << "::main:: fut1 - Thread: " << std::this_thread::get_id();
-    return db.Exec("SELECT NOW()");
-  });
-  Logger::Dbg() << "::main:: fut2";
-  std::future<Blueprint> fut2 = db.AsFuture<Blueprint>([&db]() {
-    Logger::Dbg() << "::main:: fut2 - Thread: " << std::this_thread::get_id();
-    return db.QueryBlueprint("product");
-  });
-  Logger::Dbg() << "::main:: fut1.get()";
-  QResult r = fut1.get();
-  if (r.ok) {
-    for(const auto& row: r.data) {
-      Logger::Inf() << "::main:: DB TIME: " << std::string(row[0].c_str());
-    }
-  }
-  Logger::Dbg() << "::main:: fut2.get()";
-  Blueprint bp = fut2.get();
-  Logger::Inf() << "::main:: Table: " << bp.GetTableName() << ", Columns.size() = " << bp.GetColumns().size();
-
+  Logger::Err() << json::serialize(r.json());
 
   // migrator.Migrate(db);
   ioc.run(); // thre

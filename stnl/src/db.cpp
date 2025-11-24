@@ -7,19 +7,25 @@
 #include "stnl/utils.hpp"
 
 #include <boost/asio.hpp>
-#include <pqxx/pqxx>
+#include <boost/json.hpp>
 
+#include <pqxx/pqxx>
+#include <pqxx/result>
+#include <pqxx/field.hxx>
+
+#include <format>
 #include <string>
 #include <thread>
 #include <memory>
 #include <future>
 
 namespace asio = boost::asio;
+namespace json = boost::json;
 
 namespace STNL {
 
   DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
-    /* there has to be at lease one mandatory thread */
+    /* there has to be at least one mandatory thread */
     if (numThreads == 0) { numThreads = 1; }
     for (size_t i = 0; i < numThreads; ++i) {
       threadPool_.emplace_back([this](){ this->ioc_.run(); });
@@ -59,7 +65,7 @@ namespace STNL {
 
   std::future<QResult> DB::ExecAsync(std::string_view qSQL, bool silent) {
     return Utils::AsFuture<QResult>(ioc_, [this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
-  }
+  } 
 
   bool DB::TableExists(std::string_view tableName) {
     std::string qSQL = Utils::FixIndent(R"(
@@ -207,4 +213,74 @@ namespace STNL {
     return bp;
   }
 
+  std::string DB::GetConnectionString(
+      std::string_view dbName,
+      std::string_view dbUser,
+      std::string_view dbPassword,
+      std::string_view dbHost,
+      size_t dbPort,
+      std::string_view dbSchema)
+  {  
+    return std::format("dbname={} user={} password={} host={} port={} options=-csearch_path={}",
+      dbName, dbUser, dbPassword, dbHost, dbPort, dbSchema);
+  }
+
+  
+  static boost::json::value row_to_json(pqxx::row const& row) {
+    boost::json::object obj;
+    for (const auto& field : row) {
+        const char* name = field.name();
+        if (field.is_null()) { 
+            obj[name] = nullptr; 
+        }
+        else {
+            Logger::Dbg() << pqxx::to_string(field.type());
+            switch (field.type())
+            {
+            case PgFieldTypeOID::int4:
+            case PgFieldTypeOID::int8:
+              obj[name] = field.as<long long>();
+              break;
+            case PgFieldTypeOID::numeric:
+            case PgFieldTypeOID::float4:
+            case PgFieldTypeOID::float8:
+              obj[name] = field.as<double>();
+              break;
+            case PgFieldTypeOID::boolean:
+              obj[name] = field.as<bool>();
+              break;
+            case PgFieldTypeOID::json:
+            case PgFieldTypeOID::jsonb:
+              obj[name] = boost::json::parse(field.c_str());
+              break;
+            case PgFieldTypeOID::bit:
+              if (field.size() == 1) {
+                obj[name] = (field.c_str()[0] == '1');
+                break;
+              }
+            default:
+              obj[name] = field.c_str();
+              break;
+            }
+        }
+    }
+    // Assuming the function needs to return a boost::json::value containing the boost::json::object
+    return boost::json::value(std::move(obj));
+  }
+
+  static boost::json::value result_to_json(pqxx::result const& result) {
+    boost::json::array jsonArray;
+    for(pqxx::row const& row : result) {
+      jsonArray.emplace_back(row_to_json(row));
+    }
+    return boost::json::value{std::move(jsonArray)};
+  }
+
+  boost::json::value QResult::json() const {
+    boost::json::object obj;
+    obj["ok"] = this->ok;
+    obj["msg"] = this->msg;
+    obj["data"] = (this->ok ? result_to_json(this->data) : boost::json::array{});
+    return boost::json::value{std::move(obj)};
+  }
 }
