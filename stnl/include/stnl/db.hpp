@@ -26,6 +26,7 @@ namespace STNL {
     bool ok;
     std::string msg;
     boost::json::value json() const;
+    boost::json::value dataAsJson() const;
   };
 
 

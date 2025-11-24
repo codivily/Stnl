@@ -52,7 +52,7 @@ int main(int argc, char argv[]) {
 
   QResult r = db.ExecAsync("SELECT * FROM product ORDER BY utcdt DESC").get();
 
-  Logger::Err() << json::serialize(r.json());
+  Logger::Err() << r.dataAsJson();
 
   // migrator.Migrate(db);
   ioc.run(); // thre

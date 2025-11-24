@@ -283,4 +283,9 @@ namespace STNL {
     obj["data"] = (this->ok ? result_to_json(this->data) : boost::json::array{});
     return boost::json::value{std::move(obj)};
   }
+
+  boost::json::value QResult::dataAsJson() const {
+    if (!this->ok) { return boost::json::value{std::move(boost::json::array{})}; }
+    return result_to_json(this->data);
+  }
 }

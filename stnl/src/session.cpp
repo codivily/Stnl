@@ -86,7 +86,7 @@ http::message_generator Session::HandleRequest(Request& req) {
     auto it = server_->GetRouter().find(key);
     if (it == server_->GetRouter().end())
     {
-        return Server::Response(req, "Not Found (HTTP 404)", http::status::not_found);
+        return Server::Response(req, std::string("Not Found (HTTP 404)"), http::status::not_found);
     }
     // Run the middleware chain before handler
     boost::optional<http::message_generator> result = ApplyMiddlewares(req);

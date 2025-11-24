@@ -42,9 +42,10 @@ class Server : public std::enable_shared_from_this<Server> {
 public:
     Server(asio::io_context& ioc, tcp::endpoint endpoint, fs::path rootDirPath);
     
-    static http::message_generator Response(const Request& req, std::string msg, http::status status_code = http::status::ok);
-    static http::message_generator Response(const Request& req, fs::path file_path, std::string content_type, http::status status_code = http::status::ok);
-    static http::message_generator Response(const Request& req, const boost::json::object& data, http::status status_code = http::status::ok);
+    static http::message_generator Response(const Request& req, http::status status_code = http::status::ok);
+    static http::message_generator Response(const Request& req, const std::string& msg, http::status status_code = http::status::ok);
+    static http::message_generator Response(const Request& req, const fs::path& file_path, std::string content_type, http::status status_code = http::status::ok);
+    static http::message_generator Response(const Request& req, const boost::json::value& data, http::status status_code = http::status::ok);
 
     
     const Router& GetRouter() const;
