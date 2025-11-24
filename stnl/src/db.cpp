@@ -47,6 +47,23 @@ namespace STNL {
     return it->second;
   }
 
+  const std::unordered_map<std::string, unsigned int>& SelectedFieldIndex::GetMap() const {
+    return fieldToIndex_;
+  }
+
+  Inserter::Inserter(std::string const& tableName) : tableName_(tableName) {}
+  
+  std::string Inserter::GetSQLCmdName() const {
+    return std::format("sql_cmd_insert_{}", tableName_);
+  }
+
+  std::string Inserter::GetSQLCmd() const { 
+    return std::format("INSERT INTO {} ({}) VALUES ({})", tableName_, columnsSS_.str(), placeholderSS_.str());
+  }
+
+  pqxx::params& Inserter::GetParams() {
+    return this->params_;
+  }
 
   DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
     /* there has to be at least one mandatory thread */
@@ -86,6 +103,28 @@ namespace STNL {
     if (pConn) { pool_.ReturnConnection(pConn); }
     return qResult;
   }
+
+  QResult DB::ExecSQLCmd(std::string const& sqlCmdName, std::string const& sqlCmd, pqxx::params& params, bool silent) {
+    if (!silent) { Logger::Dbg() << std::format("DB::ExecSQLCmd:<{}>: {}", sqlCmdName, sqlCmd); }
+    QResult qResult{pqxx::result{}, false, ""};
+    pqxx::connection* pConn = nullptr;
+    try {
+      pConn = pool_.GetConnection();
+      // pConn->prepare(sqlCmdName, sqlCmd);
+      pqxx::nontransaction tx(*pConn);
+      pqxx::result result = tx.exec(sqlCmd, params);
+      qResult.data = result;
+      qResult.ok = true;
+    } catch(std::exception& e) {
+      qResult.msg = Utils::Trim(std::string(e.what()));
+      Logger::Err() << "DB::ExecSQLCmd: ErrorWhat: \n" << e.what();
+      Logger::Err() << "DB::ExecSQLCmd: ErrorSQL: \n" << std::format("<{}>: {}", sqlCmdName, sqlCmd);
+    }
+    if (pConn) { pool_.ReturnConnection(pConn); }
+    return qResult;
+  }
+
+  
 
   std::future<QResult> DB::ExecAsync(std::string_view qSQL, bool silent) {
     return Utils::AsFuture<QResult>(ioc_, [this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
@@ -274,9 +313,19 @@ namespace STNL {
     return boost::json::value{std::move(obj)};
   }
 
-  boost::json::value QResult::DataJson() const {
+  boost::json::value QResult::DataAsJson() const {
     if (!this->ok) { return boost::json::value{std::move(boost::json::array{})}; }
     return result_to_json(this->data);
+  }
+
+  std::ostream& operator<<(std::ostream& os, pqxx::result const& result) {
+    os << result_to_json(result);
+    return os;
+  }
+
+  LogStream& operator<<(LogStream& stream, pqxx::result const& result) {
+    stream << result_to_json(result);
+    return stream;
   }
 
   std::ostream& operator<<(std::ostream& os, QResult const& qResult) {

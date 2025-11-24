@@ -19,6 +19,8 @@
 #include <map>
 #include <iostream>
 #include <sstream>
+#include <utility> // for std::forward
+#include <type_traits> // Required for std::is_same_v
 
 namespace asio = boost::asio;
 
@@ -30,13 +32,16 @@ namespace STNL {
     bool ok;
     std::string msg;
     boost::json::value Json() const;
-    boost::json::value DataJson() const;
+    boost::json::value DataAsJson() const;
     friend std::ostream& operator<<(std::ostream& os, QResult const& qResult);
     friend LogStream& operator<<(LogStream& stream, QResult const& qResult);
   };
+  std::ostream& operator<<(std::ostream& os, pqxx::result const& result);
+  LogStream& operator<<(LogStream& stream, pqxx::result const& result);
   std::ostream& operator<<(std::ostream& os, QResult const& qResult);
   LogStream& operator<<(LogStream& stream, QResult const& qResult);
 
+  
 
   enum PgFieldTypeOID {
     boolean = 16,
@@ -68,9 +73,37 @@ namespace STNL {
       SelectedFieldIndex() = default;
       std::string Field(std::string const& fieldName);
       unsigned int Index(std::string const& fieldName) const;
+      const std::unordered_map<std::string, unsigned int>& GetMap() const;
       std::string operator()(std::string const& fieldName);
     private:
       std::unordered_map<std::string, unsigned int> fieldToIndex_;
+  };
+
+
+  class Inserter {
+    public:
+      Inserter(std::string const& tableName);
+      template<typename T>
+      void ProcessPair(std::string const& key, T value) {
+        if (!isFirstPair_) {
+          columnsSS_ << ',';
+          placeholderSS_ << ',';
+        }
+        else { isFirstPair_ = false; }
+        params_.append(value);
+        columnsSS_ << key;
+        placeholderSS_ << "$" + std::to_string(params_.size());
+      }
+      std::string GetSQLCmdName() const;
+      std::string GetSQLCmd() const;
+      pqxx::params& GetParams();
+
+    private:
+      std::string tableName_;
+      bool isFirstPair_ = true;
+      std::stringstream columnsSS_;
+      std::stringstream placeholderSS_;
+      pqxx::params params_;
   };
 
   class DB {
@@ -82,6 +115,8 @@ namespace STNL {
       asio::io_context& GetIOC();
       QResult Exec(std::string_view qSQL, bool silent = true);
       std::future<QResult> ExecAsync(std::string_view qSQL, bool silent = true);
+
+      QResult ExecSQLCmd(std::string const& sqlCmdName, std::string const& sqlCmd, pqxx::params& params, bool silent = true);
       
       template <typename ResultType>
       std::future<ResultType> QFuture(std::function<ResultType()> fn) {
@@ -91,6 +126,13 @@ namespace STNL {
       bool TableExists(std::string_view tableName);
       std::vector<Column> GetTableColumns(std::string_view tableName = "");
       Blueprint QueryBlueprint(std::string_view tableName);
+
+      template<typename... Args>
+      QResult Insert(std::string const& tableName, Args&& ...columnValuePairs) {
+        Inserter inserter{tableName};
+        (inserter.ProcessPair(std::forward<Args>(columnValuePairs).first, std::forward<Args>(columnValuePairs).second), ...);
+        return ExecSQLCmd(inserter.GetSQLCmdName(), inserter.GetSQLCmd(), inserter.GetParams());
+      }
       
       static std::string GetConnectionString(
         std::string_view dbName,

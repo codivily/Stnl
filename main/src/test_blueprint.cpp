@@ -14,6 +14,7 @@
 #include <iostream>
 #include <format>
 #include <string>
+#include <utility> // for std::make_pair()
 
 namespace asio = boost::asio;
 namespace json = boost::json;
@@ -42,18 +43,22 @@ int main(int argc, char argv[]) {
   
   migrator.Table("Product", [](Blueprint& bp) {
     bp.BigInt("id").Identity();
-    bp.UUID("uuid").Default("uuidv7()");
+    bp.UUID("uuid").Default();
     bp.Varchar("name").Length(255).NotNull();
     bp.Numeric("price").Precision(7).Scale(2).Null();
     bp.Text("description").Null();
-    bp.Timestamp("utcdt").Default("CURRENT_TIMESTAMP");
-    bp.Bit("active").N(1).NotNull().Default("'1'::bit(1)");
+    bp.Timestamp("utcdt").NotNull().Default();
+    bp.Bit("active").N(1).NotNull().Default();
   });
 
-  QResult r = db.ExecAsync("SELECT * FROM product ORDER BY utcdt DESC").get();
-  Logger::Err() << r;
-
-  migrator.Migrate(db);
+  // QResult r = db.ExecAsync("SELECT * FROM product ORDER BY utcdt DESC").get();
+  // Logger::Err() << r.data;
+  db.Insert("Product",
+    std::make_pair("name", "Blender"),
+    std::make_pair("price", 10.5),
+    std::make_pair("description", "Camouflage device - op.60%")
+  );
+  // migrator.Migrate(db);
   ioc.run();
   return 0;
 }

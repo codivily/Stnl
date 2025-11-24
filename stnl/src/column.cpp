@@ -66,6 +66,10 @@ namespace STNL
     return *this;
   }
 
+  BitProxy& BitProxy::Default(std::string const& v) {
+    return ColumnProxy<BitProxy>::Default(v);
+  }
+
   CharProxy::CharProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Char;
     col.length = 1;
@@ -90,16 +94,32 @@ namespace STNL
     col.type = ColumnType::Boolean;
   }
 
+  BooleanProxy& BooleanProxy::Default(std::string const& v) {
+    return ColumnProxy<BooleanProxy>::Default(v);
+  }
+
   DateProxy::DateProxy(Column &c) : ColumnProxy(c) {
     col.type = ColumnType::Date;
+  }
+
+  DateProxy& DateProxy::Default(std::string const& v) {
+    return ColumnProxy<DateProxy>::Default(v);
   }
 
   TimestampProxy::TimestampProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Timestamp;
   }
 
+  TimestampProxy& TimestampProxy::Default(std::string const& v) {
+    return ColumnProxy<TimestampProxy>::Default(v);
+  }
+
   UUIDProxy::UUIDProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::UUID;
+  }
+
+  UUIDProxy& UUIDProxy::Default(std::string const& v) {
+    return ColumnProxy<UUIDProxy>::Default(v);
   }
 
   TextProxy::TextProxy(Column& c) : ColumnProxy(c) {

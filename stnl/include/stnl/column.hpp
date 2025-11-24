@@ -60,8 +60,8 @@ namespace STNL {
         return static_cast<Derived&>(*this);
       }
 
-      Derived& Default(std::string v) {
-        col.defaultValue = v;
+      virtual Derived& Default(std::string const& v) {
+        col.defaultValue = std::string{v};
         return static_cast<Derived&>(*this);
       }
   };
@@ -94,6 +94,7 @@ namespace STNL {
     public:
       BitProxy(Column& c);
       BitProxy& N(unsigned short v);
+      BitProxy& Default(std::string const& v = "'1'::bit(1)") override;
   };
 
   class CharProxy : public ColumnProxy<CharProxy> {
@@ -111,21 +112,25 @@ namespace STNL {
   class BooleanProxy : public ColumnProxy<BooleanProxy> {
     public:
       BooleanProxy(Column& c);
+      BooleanProxy& Default(std::string const& v = "true") override;
   };
 
   class DateProxy : public ColumnProxy<DateProxy> {
     public:
       DateProxy(Column& c);
+      DateProxy& Default(std::string const& v = "CURRENT_DATE") override;
   };
 
   class TimestampProxy : public ColumnProxy<TimestampProxy> {
     public:
       TimestampProxy(Column& c);
+      TimestampProxy& Default(std::string const& v = "CURRENT_TIMESTAMP") override;
   };
 
   class UUIDProxy : public ColumnProxy<UUIDProxy> {
     public:
       UUIDProxy(Column& c);
+      UUIDProxy& Default(std::string const& v = "uuidv7()") override;
   };
 
   class TextProxy : public ColumnProxy<TextProxy> {
