@@ -121,7 +121,7 @@ namespace STNL {
     // --- Core ApplyBlueprint Logic ---
 
     void Migrator::ApplyBlueprint(DB& db, Blueprint& bp) {
-        // NOTE: Removed previous Dbg/ExecAsync calls to focus on migration logic.
+        // NOTE: Removed previous Dbg/QExec calls to focus on migration logic.
         std::string tableName = bp.GetTableName();
         
         // 1. Check for table existence

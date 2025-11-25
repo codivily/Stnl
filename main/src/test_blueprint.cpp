@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 #include <boost/json.hpp>
 
+#include <chrono>
 #include <thread>
 #include <memory>
 #include <iostream>
@@ -45,20 +46,32 @@ int main(int argc, char argv[]) {
     bp.BigInt("id").Identity();
     bp.UUID("uuid").Default();
     bp.Varchar("name").Length(255).NotNull();
-    bp.Numeric("price").Precision(7).Scale(2).Null();
+    bp.Numeric("price").Precision(9).Scale(2).Null();
     bp.Text("description").Null();
     bp.Timestamp("utcdt").NotNull().Default();
     bp.Bit("active").N(1).NotNull().Default();
   });
+  migrator.Migrate(db);
 
-  // QResult r = db.ExecAsync("SELECT * FROM product ORDER BY utcdt DESC").get();
+  // QResult r = db.QExec("SELECT * FROM product ORDER BY utcdt DESC").get();
   // Logger::Err() << r.data;
-  db.Insert("Product",
-    std::make_pair("name", "Blender"),
-    std::make_pair("price", 10.5),
-    std::make_pair("description", "Camouflage device - op.60%")
-  );
-  // migrator.Migrate(db);
+  Logger::Dbg() << "::main:: before inserts' loop";
+  unsigned int maxCount = 15;
+  unsigned int i = 0;
+  while (true) {
+    ++i;
+    std::future<QResult> fut = db.QInsert<true>("Product",
+      std::make_pair("name", "Oreshnic - " + std::to_string(i)),
+      std::make_pair("price", 10.5 + static_cast<double>(i)),
+      std::make_pair("description", nullptr)
+    );
+    if (i >= maxCount) {
+      Logger::Dbg() << "::main:: waiting for last insert";
+      Logger::Dbg() << fut.get(); // wait for the last insert to finish
+      break;
+    }
+  }
+  Logger::Dbg() << "::main:: after inserts' loop";
   ioc.run();
   return 0;
 }

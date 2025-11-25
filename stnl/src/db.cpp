@@ -68,6 +68,7 @@ namespace STNL {
   DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
     /* there has to be at least one mandatory thread */
     if (numThreads == 0) { numThreads = 1; }
+    threadPool_.reserve(numThreads);
     for (size_t i = 0; i < numThreads; ++i) {
       threadPool_.emplace_back([this](){ this->ioc_.run(); });
     }
@@ -126,7 +127,7 @@ namespace STNL {
 
   
 
-  std::future<QResult> DB::ExecAsync(std::string_view qSQL, bool silent) {
+  std::future<QResult> DB::QExec(std::string_view qSQL, bool silent) {
     return Utils::AsFuture<QResult>(ioc_, [this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
   } 
 

@@ -114,7 +114,7 @@ namespace STNL {
 
       asio::io_context& GetIOC();
       QResult Exec(std::string_view qSQL, bool silent = true);
-      std::future<QResult> ExecAsync(std::string_view qSQL, bool silent = true);
+      std::future<QResult> QExec(std::string_view qSQL, bool silent = true);
 
       QResult ExecSQLCmd(std::string const& sqlCmdName, std::string const& sqlCmd, pqxx::params& params, bool silent = true);
       
@@ -127,11 +127,20 @@ namespace STNL {
       std::vector<Column> GetTableColumns(std::string_view tableName = "");
       Blueprint QueryBlueprint(std::string_view tableName);
 
-      template<typename... Args>
+      template<bool S = true, typename... Args>
       QResult Insert(std::string const& tableName, Args&& ...columnValuePairs) {
         Inserter inserter{tableName};
         (inserter.ProcessPair(std::forward<Args>(columnValuePairs).first, std::forward<Args>(columnValuePairs).second), ...);
-        return ExecSQLCmd(inserter.GetSQLCmdName(), inserter.GetSQLCmd(), inserter.GetParams());
+        return ExecSQLCmd(inserter.GetSQLCmdName(), inserter.GetSQLCmd(), inserter.GetParams(), S);
+      }
+
+      template<bool S = true, typename... Args>
+      std::future<QResult> QInsert(std::string tableName, Args&& ...columnValuePairs) {
+          return Utils::AsFuture<QResult>(ioc_, [this, tableName = std::move(tableName), columnValuePairs = std::make_tuple(std::forward<Args>(columnValuePairs)...)]() mutable {
+              return std::apply([this, tableName = std::move(tableName)](auto&&... vals) {
+                  return Insert<S>(tableName, std::forward<decltype(vals)>(vals)...);
+              }, columnValuePairs);
+          });
       }
       
       static std::string GetConnectionString(

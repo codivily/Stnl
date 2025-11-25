@@ -23,6 +23,7 @@ namespace STNL {
       std::mutex poolMutex_;
       std::condition_variable poolCondition_;
       size_t maxSize_;
+      size_t size_;
   };
 }
 
