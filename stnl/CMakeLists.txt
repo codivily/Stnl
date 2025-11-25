@@ -9,6 +9,7 @@ set(STNL_SOURCES
     src/middleware.cpp
     src/config.cpp
     src/column.cpp
+    src/inserter.cpp
     src/blueprint.cpp
     src/migrator.cpp
     src/connection_pool.cpp

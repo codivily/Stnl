@@ -3,6 +3,7 @@
 #include "stnl/db.hpp"
 #include "stnl/blueprint.hpp"
 #include "stnl/connection_pool.hpp"
+#include "stnl/inserter.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/utils.hpp"
 
@@ -13,9 +14,9 @@
 #include <pqxx/result>
 #include <pqxx/field.hxx>
 
+#include <functional>
 #include <format>
 #include <string>
-#include <format>
 #include <thread>
 #include <memory>
 #include <future>
@@ -51,20 +52,6 @@ namespace STNL {
     return fieldToIndex_;
   }
 
-  Inserter::Inserter(std::string const& tableName) : tableName_(tableName) {}
-  
-  std::string Inserter::GetSQLCmdName() const {
-    return std::format("sql_cmd_insert_{}", tableName_);
-  }
-
-  std::string Inserter::GetSQLCmd() const { 
-    return std::format("INSERT INTO {} ({}) VALUES ({})", tableName_, columnsSS_.str(), placeholderSS_.str());
-  }
-
-  pqxx::params& Inserter::GetParams() {
-    return this->params_;
-  }
-
   DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
     /* there has to be at least one mandatory thread */
     if (numThreads == 0) { numThreads = 1; }
@@ -95,11 +82,11 @@ namespace STNL {
       pqxx::result r = tx.exec(qSQL);
       qResult.data = std::move(r);
       qResult.ok = true;
-    } catch(std::exception& e) {
+    } catch(const pqxx::sql_error& e) {
       qResult.ok = false;
       qResult.msg = Utils::Trim(std::string(e.what()));
       Logger::Err() << "DB::Exec: ErrorWhat: \n" << e.what();
-      Logger::Err() << "DB::Exec: ErrorSQL: \n" << qSQL;
+      Logger::Err() << "DB::Exec: ErrorSQL: " << e.query();
     }
     if (pConn) { pool_.ReturnConnection(pConn); }
     return qResult;
@@ -116,10 +103,10 @@ namespace STNL {
       pqxx::result result = tx.exec(sqlCmd, params);
       qResult.data = result;
       qResult.ok = true;
-    } catch(std::exception& e) {
+    } catch(const pqxx::sql_error& e) {
       qResult.msg = Utils::Trim(std::string(e.what()));
       Logger::Err() << "DB::ExecSQLCmd: ErrorWhat: \n" << e.what();
-      Logger::Err() << "DB::ExecSQLCmd: ErrorSQL: \n" << std::format("<{}>: {}", sqlCmdName, sqlCmd);
+      Logger::Err() << "DB::ExecSQLCmd: ErrorSQL: " << e.query();
     }
     if (pConn) { pool_.ReturnConnection(pConn); }
     return qResult;
@@ -129,7 +116,39 @@ namespace STNL {
 
   std::future<QResult> DB::QExec(std::string_view qSQL, bool silent) {
     return Utils::AsFuture<QResult>(ioc_, [this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
-  } 
+  }
+  
+  QResult DB::InsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn) {
+    BatchInserter batch{tableName};
+    populateBatchFn(batch);
+    // debug:start
+    // if (!silent) { Logger::Dbg() << "DB::Exec:qSQL: \n" << qSQL; }
+    QResult qResult{pqxx::result{}, false, ""};
+    pqxx::connection* pConn = nullptr;
+    try {
+      pConn = pool_.GetConnection();
+      pqxx::work tx(*pConn);
+      for (auto& [SQLCmd, params] : batch.GetSQLCmdLst()) {
+        tx.exec(SQLCmd, params);
+      }
+      tx.commit();
+      qResult.ok = true;
+    } catch(const pqxx::sql_error& e) {
+      qResult.ok = false;
+      qResult.msg = Utils::Trim(std::string(e.what()));
+      Logger::Err() << "DB::InsertBatch: (ROOLBACK) - ErrorWhat: \n" << e.what();
+      Logger::Err() << "DB::InsertBatch: ErrorSQL: " << e.query();
+    }
+    if (pConn) { pool_.ReturnConnection(pConn); }
+    return qResult;
+  }
+
+  std::future<QResult> DB::QInsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn) {
+    return Utils::AsFuture<QResult>(ioc_, [this, tableName = std::string(tableName),  populateBatchFn = std::move(populateBatchFn)]() {
+      return this->InsertBatch(tableName, std::move(populateBatchFn));
+    });
+  }
+
 
   bool DB::TableExists(std::string_view tableName) {
     std::string qSQL = Utils::FixIndent(R"(

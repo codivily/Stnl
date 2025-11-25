@@ -4,6 +4,7 @@
 #include "connection_pool.hpp"
 #include "blueprint.hpp"
 #include "column.hpp"
+#include "inserter.hpp"
 #include "utils.hpp"
 #include "logger.hpp"
 #include <boost/asio.hpp>
@@ -67,7 +68,6 @@ namespace STNL {
     jsonb = 3802
   };
 
-    
   class SelectedFieldIndex {
     public:
       SelectedFieldIndex() = default;
@@ -77,33 +77,6 @@ namespace STNL {
       std::string operator()(std::string const& fieldName);
     private:
       std::unordered_map<std::string, unsigned int> fieldToIndex_;
-  };
-
-
-  class Inserter {
-    public:
-      Inserter(std::string const& tableName);
-      template<typename T>
-      void ProcessPair(std::string const& key, T value) {
-        if (!isFirstPair_) {
-          columnsSS_ << ',';
-          placeholderSS_ << ',';
-        }
-        else { isFirstPair_ = false; }
-        params_.append(value);
-        columnsSS_ << key;
-        placeholderSS_ << "$" + std::to_string(params_.size());
-      }
-      std::string GetSQLCmdName() const;
-      std::string GetSQLCmd() const;
-      pqxx::params& GetParams();
-
-    private:
-      std::string tableName_;
-      bool isFirstPair_ = true;
-      std::stringstream columnsSS_;
-      std::stringstream placeholderSS_;
-      pqxx::params params_;
   };
 
   class DB {
@@ -129,9 +102,10 @@ namespace STNL {
 
       template<bool S = true, typename... Args>
       QResult Insert(std::string const& tableName, Args&& ...columnValuePairs) {
-        Inserter inserter{tableName};
-        (inserter.ProcessPair(std::forward<Args>(columnValuePairs).first, std::forward<Args>(columnValuePairs).second), ...);
-        return ExecSQLCmd(inserter.GetSQLCmdName(), inserter.GetSQLCmd(), inserter.GetParams(), S);
+        Inserter inserter;
+        (inserter << ... << std::forward<Args>(columnValuePairs));
+        auto [SQLCmd, params] = inserter.flush(tableName);
+        return ExecSQLCmd(std::format("sql_cmd_inert_{}", tableName), SQLCmd, params, S);
       }
 
       template<bool S = true, typename... Args>
@@ -142,6 +116,9 @@ namespace STNL {
               }, columnValuePairs);
           });
       }
+
+      QResult InsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn);
+      std::future<QResult> QInsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn);
       
       static std::string GetConnectionString(
         std::string_view dbName,
