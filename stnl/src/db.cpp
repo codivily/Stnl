@@ -78,10 +78,16 @@ namespace STNL {
     pqxx::connection* pConn = nullptr;
     try {
       pConn = pool_.GetConnection();
-      pqxx::nontransaction tx(*pConn);
-      pqxx::result r = tx.exec(qSQL);
-      qResult.data = std::move(r);
-      qResult.ok = true;
+      if (pConn) {
+        pqxx::nontransaction tx(*pConn);
+        pqxx::result r = tx.exec(qSQL);
+        qResult.data = std::move(r);
+        qResult.ok = true;
+      }
+      else {
+        qResult.ok = false;
+        qResult.msg = "Failed to get a database connection";
+      }
     } catch(const pqxx::sql_error& e) {
       qResult.ok = false;
       qResult.msg = Utils::Trim(std::string(e.what()));
@@ -98,11 +104,17 @@ namespace STNL {
     pqxx::connection* pConn = nullptr;
     try {
       pConn = pool_.GetConnection();
-      // pConn->prepare(sqlCmdName, sqlCmd);
-      pqxx::nontransaction tx(*pConn);
-      pqxx::result result = tx.exec(sqlCmd, params);
-      qResult.data = result;
-      qResult.ok = true;
+      if (pConn) {
+        // pConn->prepare(sqlCmdName, sqlCmd);
+        pqxx::nontransaction tx(*pConn);
+        pqxx::result result = tx.exec(sqlCmd, params);
+        qResult.data = result;
+        qResult.ok = true;
+      }
+      else {
+        qResult.ok = false;
+        qResult.msg = "Failed to get a database connection";
+      }
     } catch(const pqxx::sql_error& e) {
       qResult.msg = Utils::Trim(std::string(e.what()));
       Logger::Err() << "DB::ExecSQLCmd: ErrorWhat: \n" << e.what();
@@ -111,8 +123,6 @@ namespace STNL {
     if (pConn) { pool_.ReturnConnection(pConn); }
     return qResult;
   }
-
-  
 
   std::future<QResult> DB::QExec(std::string_view qSQL, bool silent) {
     return Utils::AsFuture<QResult>(ioc_, [this, qSQL, silent = std::move(silent)]() { return this->Exec(qSQL, silent); });
@@ -123,16 +133,22 @@ namespace STNL {
     populateBatchFn(batch);
     // debug:start
     // if (!silent) { Logger::Dbg() << "DB::Exec:qSQL: \n" << qSQL; }
-    QResult qResult{pqxx::result{}, false, ""};
+    QResult qResult{pqxx::result{}, true, ""};
     pqxx::connection* pConn = nullptr;
     try {
       pConn = pool_.GetConnection();
-      pqxx::work tx(*pConn);
-      for (auto& [SQLCmd, params] : batch.GetSQLCmdLst()) {
-        tx.exec(SQLCmd, params);
+      if (pConn) {
+        pqxx::work tx(*pConn);
+        for (auto& [SQLCmd, params] : batch.GetSQLCmdLst()) {
+          tx.exec(SQLCmd, params);
+        }
+        tx.commit();
+        qResult.ok = true;
       }
-      tx.commit();
-      qResult.ok = true;
+      else {
+        qResult.ok = false;
+        qResult.msg = "Failed to get a database connection";
+      }
     } catch(const pqxx::sql_error& e) {
       qResult.ok = false;
       qResult.msg = Utils::Trim(std::string(e.what()));

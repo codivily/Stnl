@@ -1,7 +1,10 @@
 
 #include "stnl/logger.hpp"
 #include "stnl/connection_pool.hpp"
+
 #include <pqxx/pqxx>
+
+#include <vector>
 #include <string>
 #include <memory>
 #include <mutex>
@@ -15,21 +18,21 @@ namespace STNL
   {
     if (maxSize_ < 1) { maxSize_ = 1; }
     pool_.reserve(maxSize_);
-    for (std::size_t i = 0; i < maxSize_; ++i) {
-      try {
-        pool_.emplace_back(std::make_unique<pqxx::connection>(connStr_));
-      }
-      catch (const std::exception &e) {
-        std::cerr << "ConnectionPool::ConnectionPool: Pool initialization failed on connection " << i + 1 << std::endl;
-        maxSize_ = pool_.size();
-      }
-    }
-    size_ = pool_.size();
   }
 
   pqxx::connection *ConnectionPool::GetConnection()
   {
     std::unique_lock<std::mutex> lock(poolMutex_);
+    if (size_ < 1 && pool_.size() < maxSize_) {
+      try {
+        pool_.emplace_back(std::make_unique<pqxx::connection>(connStr_));
+        return pool_.back().release();
+      }
+      catch(const std::exception &e) {
+        Logger::Err() << "ConnectionPool::GetConnection: Error: " << std::string(e.what());
+        return nullptr;
+      }
+    }
     poolCondition_.wait(lock, [this]() { return size_ > 0; });
     return pool_[--size_].release();
   }

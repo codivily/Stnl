@@ -12,6 +12,10 @@
 
 namespace STNL {
  
+  bool Inserter::Empty() {
+    return isFirstPair_;
+  }
+
   std::tuple<std::string, pqxx::params> Inserter::flush(std::string const& tableName) {
     std::string sqlCmd = std::format("INSERT INTO {} ({}) VALUES ({})", tableName, columnsSS_.str(), placeholderSS_.str());
     isFirstPair_ = true;
@@ -31,6 +35,7 @@ namespace STNL {
   }
 
   void BatchInserter::flush() {
+    if (inserter_.Empty()) { return; }
     auto [SQLCmd, params] = inserter_.flush(tableName_);
     // Logger::Dbg() << "BatchInserter::flush(): SQLCmd: " << SQLCmd << " | params.size():" << std::to_string(params.size());
     this->SQLCmdLst_.emplace_back(std::move(SQLCmd), std::move(params));

@@ -14,7 +14,8 @@ namespace STNL {
   class Inserter {
       public:
         Inserter() = default;
-
+        bool Empty();
+        
         std::tuple<std::string, pqxx::params> flush(std::string const& tableName);
 
         template <typename K, typename T>
