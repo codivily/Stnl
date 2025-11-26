@@ -42,6 +42,7 @@ namespace STNL {
   }
 
   std::vector<std::pair<std::string, pqxx::params>>& BatchInserter::GetSQLCmdLst() {
+    if (!inserter_.Empty()) { this->flush(); }
     return this->SQLCmdLst_;
   }
 
