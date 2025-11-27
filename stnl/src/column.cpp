@@ -14,6 +14,8 @@ namespace STNL
       nullable(false),
       precision(0),
       scale(0),
+      index(false),
+      unique(false),
       defaultValue{} {
         name = Utils::StringToLower(colRealName);
   }
@@ -27,14 +29,31 @@ namespace STNL
     return *this;
   }
 
+  void BigIntProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
+  void BigIntProxy::Unique(bool const& v) {
+    col.unique = v;
+  }
+
   IntegerProxy::IntegerProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Integer;
   }
 
-  IntegerProxy& IntegerProxy::Identity(bool v) {
+  IntegerProxy& IntegerProxy::Identity(bool const& v) {
     col.identity = v;
     return *this;
   }
+
+  void IntegerProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
+  void IntegerProxy::Unique(bool const& v) {
+    col.unique = v;
+  }
+
 
   SmallIntProxy::SmallIntProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::SmallInt;
@@ -80,6 +99,14 @@ namespace STNL
     return *this;
   }
 
+  void CharProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
+  void CharProxy::Unique(bool const& v) {
+    col.unique = v;
+  }
+
   VarcharProxy::VarcharProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Varchar;
     col.length = 255;
@@ -88,6 +115,14 @@ namespace STNL
   VarcharProxy& VarcharProxy::Length(std::size_t v) {
     col.length = v;
     return *this;
+  }
+
+  void VarcharProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
+  void VarcharProxy::Unique(bool const& v) {
+    col.unique = v;
   }
 
   BooleanProxy::BooleanProxy(Column& c) : ColumnProxy(c) {
@@ -106,6 +141,10 @@ namespace STNL
     return ColumnProxy<DateProxy>::Default(v);
   }
 
+  void DateProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
   TimestampProxy::TimestampProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::Timestamp;
   }
@@ -114,12 +153,24 @@ namespace STNL
     return ColumnProxy<TimestampProxy>::Default(v);
   }
 
+  void TimestampProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
   UUIDProxy::UUIDProxy(Column& c) : ColumnProxy(c) {
     col.type = ColumnType::UUID;
   }
 
   UUIDProxy& UUIDProxy::Default(std::string const& v) {
     return ColumnProxy<UUIDProxy>::Default(v);
+  }
+
+  void UUIDProxy::Index(bool const& v) {
+    col.index = v;
+  }
+
+  void UUIDProxy::Unique(bool const& v) {
+    col.unique = v;
   }
 
   TextProxy::TextProxy(Column& c) : ColumnProxy(c) {

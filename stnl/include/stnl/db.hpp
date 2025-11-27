@@ -98,6 +98,7 @@ namespace STNL {
 
       bool TableExists(std::string_view tableName);
       std::vector<Column> GetTableColumns(std::string_view tableName = "");
+      std::vector<std::string> GetTableIndexNames(std::string_view tableName);
       Blueprint QueryBlueprint(std::string_view tableName);
 
       template<bool S = true, typename... Args>

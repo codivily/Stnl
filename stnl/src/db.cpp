@@ -180,10 +180,26 @@ namespace STNL {
     return (r.data.size() < 1 ? false : true);
   }
 
+  std::vector<std::string> DB::GetTableIndexNames(std::string_view tableName) {
+    std::string qSQL{"SELECT indexname FROM pg_indexes WHERE LOWER(tablename) = LOWER('" + std::string(tableName) + "')"};
+    QResult r = this->Exec(qSQL);
+    std::vector<std::string> indexNameLst;
+    if (r.ok) {
+      indexNameLst.reserve(r.data.size());
+      for (const auto& row : r.data) {
+        indexNameLst.emplace_back(row[0].as<std::string>());
+      }
+    }
+    return indexNameLst;
+  }
+
   std::vector<Column> DB::GetTableColumns(std::string_view tableName) {
+
+      std::vector<std::string> indexNameLst = this->GetTableIndexNames(tableName);
       SelectedFieldIndex sfi;
       
       std::vector<std::string> select;
+      select.reserve(10);
       select.emplace_back(sfi("table_name"));
       select.emplace_back(sfi("column_name"));
       select.emplace_back(sfi("data_type"));
@@ -195,6 +211,7 @@ namespace STNL {
       select.emplace_back(sfi("identity_generation"));
 
       std::vector<std::string> where;
+      where.reserve(4);
       where.emplace_back("table_schema = CURRENT_SCHEMA()");
       if (!tableName.empty()) { where.emplace_back(std::format("LOWER(table_name) = LOWER('{}')", tableName)); }
       std::string qSQL = std::format("SELECT {} FROM information_schema.columns WHERE {} ORDER BY table_name, ordinal_position", Utils::Join(select, ","), Utils::Join(where, " AND "));
@@ -215,6 +232,14 @@ namespace STNL {
           
           Column col(table, colName, ColumnType::Undefined); 
 
+          std::string standardIndexName = Utils::StringToLower(std::format("{}_{}_idx", table, colName));
+          std::string uniqueIndexName = Utils::StringToLower(std::format("{}_{}_key", table, colName));
+          for (std::string& indexName: indexNameLst) {
+            if (!strcmpi(indexName.c_str(), standardIndexName.c_str())) { col.index = true; }
+            else if (!strcmpi(indexName.c_str(), uniqueIndexName.c_str())) { col.unique = true; }
+            if (col.index && col.unique) { break; }
+          }
+          
           // A. Handle Nullability
           col.nullable = (isNullable == "YES");
 
@@ -259,7 +284,8 @@ namespace STNL {
           
           // D. Handle Default Value
           if (row[sfi.Index("column_default")].c_str() && row[sfi.Index("column_default")].c_str()[0] != '\0') {
-              col.defaultValue = row[sfi.Index("column_default")].as<std::string>();
+            std::string s = row[sfi.Index("column_default")].as<std::string>();
+            col.defaultValue = s.substr(0, s.find_last_of(':') - 1); // get the default value without the ::type name portion
           }
           columns.push_back(std::move(col));
       }
@@ -268,7 +294,7 @@ namespace STNL {
 
   Blueprint DB::QueryBlueprint(std::string_view tableName) {
     if (tableName.empty()){
-      STNL::Logger::Err() << "DB::QueryBlueprint: Table name cannot be empty for Blueprint generation.";
+      Logger::Err() << "DB::QueryBlueprint: Table name cannot be empty for Blueprint generation.";
       throw std::invalid_argument("Blueprint generation requires a non-empty table name.");
     }
     std::vector<Column> cols = GetTableColumns(tableName);
