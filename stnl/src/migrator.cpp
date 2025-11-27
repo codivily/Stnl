@@ -245,7 +245,7 @@ namespace STNL {
                 desiredCol.defaultValue.empty()) {
                   desiredDefaultValue = std::string("uuidv7()");
             }
-            if (strcmpi(currentCol.defaultValue.c_str(), desiredDefaultValue.c_str()) != 0) {
+            if (strcmp(currentCol.defaultValue.c_str(), desiredDefaultValue.c_str()) != 0) {
                 std::string defaultSQL;
                 if (desiredDefaultValue.empty()) {
                     // Remove default
