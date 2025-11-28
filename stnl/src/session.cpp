@@ -23,8 +23,8 @@ using tcp = boost::asio::ip::tcp;
 
 namespace STNL {
 
-Session::Session(tcp::socket socket, std::shared_ptr<Server> server)
-    : stream_(std::move(socket)), server_(std::move(server)) {}
+Session::Session(tcp::socket socket, Server& server)
+    : stream_(std::move(socket)), server_(server) {}
 
 void Session::Run() { DoRead(); }
 
@@ -65,7 +65,7 @@ void Session::OnWrite(beast::error_code ec, std::size_t) {  // bytes_transferred
 }
 
 boost::optional<http::message_generator> Session::ApplyMiddlewares(Request& req) {
-    for (const std::unique_ptr<Middleware>& mw : server_->GetMiddlewares()) { 
+    for (const std::unique_ptr<Middleware>& mw : server_.GetMiddlewares()) { 
         boost::optional<http::message_generator> result = mw->invoke(req);
         if (result.has_value()) {
             return std::move(result);
@@ -83,8 +83,8 @@ http::message_generator Session::HandleRequest(Request& req) {
         path = full_target.substr(0, query_pos);
     }
     Route key{httpReq_.method(), std::string(path)};  // Use path-only
-    auto it = server_->GetRouter().find(key);
-    if (it == server_->GetRouter().end())
+    auto it = server_.GetRouter().find(key);
+    if (it == server_.GetRouter().end())
     {
         return Server::Response(req, std::string("Not Found (HTTP 404)"), http::status::not_found);
     }

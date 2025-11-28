@@ -7,7 +7,7 @@
 #include "stnl/server.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/request.hpp"
-#include "stnl/db.hpp";
+#include "stnl/db.hpp"
 
 #include <boost/beast/version.hpp>
 #include <boost/beast/http/file_body.hpp>
@@ -36,16 +36,16 @@ using UploadedFile = STNL::UploadedFile;
 using DB = STNL::DB;
 using QResult = STNL::QResult;
 
-ServerMain::ServerMain(std::shared_ptr<Server> server) : STNLModule(std::move(server)) {}
+ServerMain::ServerMain(Server& server) : STNLModule(server) {}
 
 http::message_generator ServerMain::WebGetHome(Request const& req) {
-  return Server::Response(req, GetServer()->GetRootDirPath() / "index.html", "text/html");
+  return Server::Response(req, server_.GetRootDirPath() / "index.html", "text/html");
 }
 
 http::message_generator ServerMain::ApiPostData(Request const& req) {
   boost::json::object reqData = req.data();
   boost::json::object resData;
-  std::shared_ptr<Ticker> ticker = GetServer()->GetModule<Ticker>();
+  std::shared_ptr<Ticker> ticker = server_.GetModule<Ticker>();
   std::vector<std::string> fpaths;
   for(const UploadedFile& uf : req.files()) {
     fpaths.push_back(uf.file.string());
@@ -61,7 +61,7 @@ http::message_generator ServerMain::ApiPostData(Request const& req) {
 
 
 http::message_generator ServerMain::ApiGetProduct(Request const& req) {
-  std::shared_ptr<DB> pDB = GetServer()->GetDatabase("default");
+  std::shared_ptr<DB> pDB = server_.GetDatabase("default");
   boost::json::object reqData = req.data();
   boost::json::object queryData = req.query();
   QResult r = pDB->Exec("SELECT * FROM product LIMIT 10");
@@ -75,10 +75,9 @@ http::message_generator ServerMain::ApiGetProduct(Request const& req) {
 void ServerMain::Setup() {
   Logger::Dbg() << ("ServerMain::Setup()");
   std::shared_ptr<ServerMain> self = shared_from_this();
-  std::shared_ptr<Server> server = GetServer();
-  server->Get("/", [self](Request const& req) { return self->WebGetHome(req); });
-  server->Post("/api/data", [self](Request const& req) { return self->ApiPostData(req); });
-  server->Get("/api/product", [self](Request const& req) { return self->ApiGetProduct(req); });
+  server_.Get("/", [self](Request const& req) { return self->WebGetHome(req); });
+  server_.Post("/api/data", [self](Request const& req) { return self->ApiPostData(req); });
+  server_.Get("/api/product", [self](Request const& req) { return self->ApiGetProduct(req); });
 }
 
 

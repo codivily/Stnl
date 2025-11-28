@@ -5,7 +5,5 @@
 
 namespace STNL {
 
-STNLModule::STNLModule(std::shared_ptr<Server> server) : server_(server) {}
-std::shared_ptr<Server> STNLModule::GetServer() { return server_; }
-
+STNLModule::STNLModule(Server& server) : server_(server) {}
 }  // namespace STNL

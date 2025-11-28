@@ -6,8 +6,9 @@
 #include "stnl/logger.hpp"
 
 using Logger = STNL::Logger;
+using STNLModule = STNL::STNLModule;
 
-Ticker::Ticker(std::shared_ptr<STNL::Server> server) : STNL::STNLModule(std::move(server)), counter_(0){}
+Ticker::Ticker(Server& server) : STNLModule(server), counter_(0){}
 
 void Ticker::Reset() {
   counter_ = 0;

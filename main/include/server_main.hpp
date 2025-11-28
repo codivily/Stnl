@@ -18,7 +18,7 @@ class ServerMain: public STNLModule, public std::enable_shared_from_this<ServerM
   
   public:
     inline static volatile const char sType{};
-    ServerMain(std::shared_ptr<Server> server);
+    ServerMain(Server& server);
     void Setup() override;
     void Launch() override;
     //

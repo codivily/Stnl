@@ -42,7 +42,7 @@ struct CharPtrEqual {
     }
 };
 
-class Server : public std::enable_shared_from_this<Server> {
+class Server {
 public:
     Server(asio::io_context& ioc, tcp::endpoint endpoint, fs::path rootDirPath);
     
@@ -66,8 +66,7 @@ public:
     void Use()
     {
         static_assert(std::is_base_of_v<Middleware, MiddlewareType>, "MiddlewareType must inherit from Middleware");
-        // std::unique_ptr<Middleware> mw = std::make_unique<MiddlewareType>(shared_from_this());
-        middlewares_.push_back(std::make_unique<MiddlewareType>(shared_from_this()));
+        middlewares_.push_back(std::make_unique<MiddlewareType>(*this));
     }
     const std::vector<std::unique_ptr<Middleware>>& GetMiddlewares() const; 
 
@@ -79,7 +78,7 @@ public:
         volatile const void* key = &ModuleType::sType;
         auto it = modules_.find(key);
         if (it == modules_.end()) {
-            std::shared_ptr<STNLModule> m = std::static_pointer_cast<STNLModule>(std::make_shared<ModuleType>(shared_from_this()));
+            std::shared_ptr<STNLModule> m = std::static_pointer_cast<STNLModule>(std::make_shared<ModuleType>(*this));
             modules_[key] = m;
             modulesVec_.push_back(m);
         }

@@ -14,12 +14,11 @@ namespace STNL {
   class Middleware {
     public:
       virtual ~Middleware() = default;
-      explicit Middleware(std::shared_ptr<Server> server);
+      explicit Middleware(Server& server);
       virtual boost::optional<boost::beast::http::message_generator> invoke(Request& req) = 0;
       virtual void Setup() {};
-      std::shared_ptr<Server> GetServer();
     private:
-      std::shared_ptr<Server> server_;
+      Server& server_;
   };
 
 } // namespace STNL

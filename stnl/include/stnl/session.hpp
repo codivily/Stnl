@@ -16,7 +16,7 @@ namespace STNL {
 
     class Session : public std::enable_shared_from_this<Session> {
     public:
-        explicit Session(tcp::socket socket, std::shared_ptr<Server> server);
+        explicit Session(tcp::socket socket, Server& server);
         void Run();
     
     private:
@@ -29,7 +29,7 @@ namespace STNL {
         beast::tcp_stream stream_;  // Fixed typo: was "stram_"
         beast::flat_buffer buffer_;
         HttpRequest httpReq_;
-        std::shared_ptr<Server> server_;  // Access routes & middleware
+        Server& server_;  // Access routes & middleware
         bool keepAlive_;
     };
 }

@@ -4,11 +4,14 @@
 #include "stnl/server.hpp"
 #include "stnl/stnl_module.hpp"
 
-class Ticker : public STNL::STNLModule
+using Server = STNL::Server;
+using STNLModule = STNL::STNLModule;
+
+class Ticker : public STNLModule
 {
 public:
   inline static volatile const char sType{};
-  Ticker(std::shared_ptr<STNL::Server> server);
+  Ticker(Server& server);
   void Setup() override;
   void Launch() override;
   void Reset();

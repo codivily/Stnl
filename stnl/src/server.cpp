@@ -137,14 +137,14 @@ namespace STNL
     {
         acceptor_.async_accept(
             asio::make_strand(ioc_), // Fixed: was beast::bind_front_handler in wrong place
-            beast::bind_front_handler(&Server::OnAccept, shared_from_this()));
+            beast::bind_front_handler(&Server::OnAccept, this));
     }
 
     void Server::OnAccept(beast::error_code ec, tcp::socket socket)
     {
         if (!ec)
         {
-            std::make_shared<Session>(std::move(socket), shared_from_this())->Run();
+            std::make_shared<Session>(std::move(socket), *this)->Run();
         }
         else
         {

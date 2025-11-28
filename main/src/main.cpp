@@ -28,7 +28,7 @@ using DB = STNL::DB;
 
  class BasicMiddleware : public Middleware {
   public:
-    BasicMiddleware(std::shared_ptr<Server> server) : Middleware(std::move(server)) {}
+    BasicMiddleware(Server& server) : Middleware(server) {}
     boost::optional<http::message_generator> invoke(Request& req) override {
         Logger::Inf() << ("BasicMiddleware: Request for " + std::string(req.GetHttpReq().target()));
         return boost::none; // Continue processing
@@ -74,14 +74,14 @@ int main(int argc, char* argv[]) {
     if (serverPort) { endpoint.port(serverPort.value()); }
     Logger::Inf() << ("::main:: Server listening on " + endpoint.address().to_string() + ":" + std::to_string(endpoint.port()));
 
-    std::shared_ptr<Server> server = std::make_shared<Server>(ioc, endpoint, rootDirPath);
+    Server server{ioc, endpoint, rootDirPath};
     
-    server->Use<BasicMiddleware>();
-    server->AddDatabase("default", connStr);
+    server.Use<BasicMiddleware>();
+    server.AddDatabase("default", connStr);
     
-    server->AddModule<ServerMain>();
-    server->AddModule<Ticker>();
-    server->Run();
+    server.AddModule<ServerMain>();
+    server.AddModule<Ticker>();
+    server.Run();
 
     // Get the max threads = the number of logical cores
     unsigned int numThreads = std::thread::hardware_concurrency();

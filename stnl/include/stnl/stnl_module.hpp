@@ -13,12 +13,11 @@ namespace STNL {
     public:
     inline static volatile const char sType{};
     ~STNLModule() = default;
-    STNLModule(std::shared_ptr<Server> server); // for accessing usefull things
-    std::shared_ptr<Server> GetServer();
+    STNLModule(Server& server);
     virtual void Setup() {};
     virtual void Launch() {};
-    private:
-      std::shared_ptr<Server> server_;
+    protected:
+      Server& server_;
   };
 }
 
