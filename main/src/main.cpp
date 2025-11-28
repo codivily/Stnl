@@ -61,8 +61,9 @@ int main(int argc, char* argv[]) {
     Logger::Inf() << ("::main:: Server listening on " + endpoint.address().to_string() + ":" + std::to_string(endpoint.port()));
 
     std::shared_ptr<STNL::Server> server = std::make_shared<STNL::Server>(ioc, endpoint, rootDirPath);
-
+    
     server->Use<BasicMiddleware>();
+    
     server->AddModule<Database>();
     server->AddModule<ServerMain>();
     server->AddModule<Ticker>();

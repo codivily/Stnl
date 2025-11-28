@@ -166,6 +166,31 @@ namespace STNL {
   }
 
 
+  void DB::Work(std::function<void(pqxx::work &tx)> doWorkFn) {
+    pqxx::connection* pConn = nullptr;
+    try {
+      pConn = pool_.GetConnection();
+      if (pConn) {
+        pqxx::work tx(*pConn);
+        doWorkFn(tx);
+      }
+      else {
+        Logger::Err() << "BD::Work: failed to get connection. nullptr returned";
+      }
+    } catch(std::exception const& e) {
+      Logger::Err() << "DB::Work: Error: \n" << e.what();
+    }
+    if (pConn) { pool_.ReturnConnection(pConn); }
+  }
+
+  std::future<void> DB::QWork(std::function<void(pqxx::work &tx)> doWorkFn) {
+    return Utils::AsFuture<void>(ioc_, [this, doWorkFn = std::move(doWorkFn)]() {
+      this->Work(std::move(doWorkFn));
+    });
+  }
+
+
+
   bool DB::TableExists(std::string_view tableName) {
     std::string qSQL = Utils::FixIndent(R"(
         SELECT 1

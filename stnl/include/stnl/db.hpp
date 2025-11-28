@@ -34,8 +34,6 @@ namespace STNL {
     std::string msg;
   };
 
-  
-
   enum PgFieldTypeOID {
     boolean = 16,
     character = 18,
@@ -117,6 +115,9 @@ namespace STNL {
       QResult InsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn);
       std::future<QResult> QInsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn);
       
+
+      void Work(std::function<void(pqxx::work &tx)> doWorkFn);
+      std::future<void> QWork(std::function<void(pqxx::work &tx)> doWork);
       
       static std::string GetConnectionString(
         std::string_view dbName,

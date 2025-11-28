@@ -59,26 +59,17 @@ int main(int argc, char argv[]) {
     bp.Bit("active").N(1).NotNull().Default();
   });
 
-  // std::unordered_map<size_t, std::string> const& dataTypes = db.GetDataTypes();
-  // for(const auto& [oid, typname] : dataTypes) {
-  //   Logger::Dbg() << "OID: " << oid << ", TYPE: " << typname;
-  // }
+  std::unordered_map<size_t, std::string> const& dataTypes = db.GetDataTypes();
+  for(const auto& [oid, typname] : dataTypes) {
+    Logger::Dbg() << "OID: " << oid << ", TYPE: " << typname;
+  }
 
-  // QResult r = db.Exec("SELECT * FROM product ORDER BY uuid DESC LIMIT 10");
-  // if (r.ok) {
-  //   Logger::Dbg() << db.ConvertQResultToJson(r) << '\n';
-  //   Logger::Dbg() << db.ConvertPQXXResultToJson(r.data) << '\n';
-  // }
+  QResult r = db.Exec("SELECT * FROM product ORDER BY uuid DESC LIMIT 10");
+  if (r.ok) {
+    Logger::Dbg() << db.ConvertQResultToJson(r) << '\n';
+    Logger::Dbg() << db.ConvertPQXXResultToJson(r.data) << '\n';
+  }
 
-  std::future<void> fut = db.QWork([](pqxx::work &tx) {
-      for (auto [uuid, name, utcdt] : tx.stream<std::string_view, std::string_view, std::string_view>("SELECT uuid, name, utcdt FROM product LIMIT 10")) {
-        Logger::Dbg() << std::format("UUID: {}, name: {}, utcdt: {}", uuid, name, utcdt);
-      }
-      tx.commit();
-  });
-  Logger::Dbg() << "Waking work to finish";
-  fut.get();
-  Logger::Dbg() << "Work finished";
 
   migrator.Migrate(db);
   ioc.run();

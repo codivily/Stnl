@@ -69,7 +69,12 @@ int main(int argc, char argv[]) {
   //   Logger::Dbg() << db.ConvertQResultToJson(r) << '\n';
   //   Logger::Dbg() << db.ConvertPQXXResultToJson(r.data) << '\n';
   // }
-
+  // db.Work([](pqxx::work &tx) {
+  //     for (auto [uuid, name, utcdt] : tx.stream<std::string_view, std::string_view, std::string_view>("SELECT uuid, name, utcdt FROM product LIMIT 10")) {
+  //       Logger::Dbg() << std::format("UUID: {}, name: {}, utcdt: {}", uuid, name, utcdt);
+  //     }
+  //     tx.commit();
+  // });
   std::future<void> fut = db.QWork([](pqxx::work &tx) {
       for (auto [uuid, name, utcdt] : tx.stream<std::string_view, std::string_view, std::string_view>("SELECT uuid, name, utcdt FROM product LIMIT 10")) {
         Logger::Dbg() << std::format("UUID: {}, name: {}, utcdt: {}", uuid, name, utcdt);
