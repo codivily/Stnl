@@ -305,6 +305,20 @@ namespace STNL {
     return bp;
   }
 
+  std::unordered_map<size_t, std::string> const& DB::GetDataTypes() {
+    if (dataTypes_.size() < 1) {
+      QResult r = this->Exec("SELECT oid, typname FROM pg_type");
+      std::unordered_map<size_t, std::string> dataTypes;
+      if (r.ok) {
+        dataTypes_.reserve(r.data.size());
+        for (const auto& row : r.data) {
+          dataTypes_[row[0].as<size_t>()] = row[1].as<std::string>();
+        }
+      }
+    }
+    return dataTypes_;
+  }
+
   std::string DB::GetConnectionString(
       std::string_view dbName,
       std::string_view dbUser,
@@ -318,85 +332,52 @@ namespace STNL {
   }
 
   
-  static boost::json::value row_to_json(pqxx::row const& row) {
+  boost::json::value DB::RowToJson(pqxx::row const& row, std::unordered_map<size_t, std::string> const& dataTypes) {
     boost::json::object obj;
     for (const auto& field : row) {
-        const char* name = field.name();
+        const char* fieldName = field.name();
         if (field.is_null()) { 
-            obj[name] = nullptr; 
+            obj[fieldName] = nullptr; 
         }
         else {
-            switch (field.type())
-            {
-            case PgFieldTypeOID::int4:
-            case PgFieldTypeOID::int8:
-              obj[name] = field.as<long long>();
-              break;
-            case PgFieldTypeOID::numeric:
-            case PgFieldTypeOID::float4:
-            case PgFieldTypeOID::float8:
-              obj[name] = field.as<double>();
-              break;
-            case PgFieldTypeOID::boolean:
-              obj[name] = field.as<bool>();
-              break;
-            case PgFieldTypeOID::json:
-            case PgFieldTypeOID::jsonb:
-              obj[name] = boost::json::parse(field.c_str());
-              break;
-            case PgFieldTypeOID::bit:
-              if (field.size() == 1) {
-                obj[name] = (field.c_str()[0] == '1');
-                break;
+            auto it = dataTypes.find(field.type());
+            if (it != dataTypes.end()) {
+              std::string const& typname = it->second;
+              if (typname == "int4" || typname == "int8") {
+                obj[fieldName] = field.as<long long>();
               }
-            default:
-              obj[name] = field.c_str();
-              break;
+              else if (typname == "numeric" || typname == "float4" || typname == "float8" || typname == "double") {
+                obj[fieldName] = field.as<double>();
+              }
+              else if (typname == "boolean") {
+                obj[fieldName] = field.as<bool>();
+              }
+              else if (typname == "bit" && field.size() == 1) {
+                obj[fieldName] = (field.c_str()[0] == '1');
+              }
+              else { obj[fieldName] = field.c_str(); }
             }
+            else { obj[fieldName] = field.c_str(); }
         }
     }
     // Assuming the function needs to return a boost::json::value containing the boost::json::object
-    return boost::json::value(std::move(obj));
+    return obj;
   }
 
-  static boost::json::value result_to_json(pqxx::result const& result) {
+  boost::json::value DB::ConvertPQXXResultToJson(pqxx::result const& result) {
     boost::json::array jsonArray;
+    std::unordered_map<size_t, std::string> const& dataTypes = this->GetDataTypes();
     for(pqxx::row const& row : result) {
-      jsonArray.emplace_back(row_to_json(row));
+      jsonArray.emplace_back(DB::RowToJson(row, dataTypes));
     }
     return boost::json::value{std::move(jsonArray)};
   }
 
-  boost::json::value QResult::Json() const {
+  boost::json::value DB::ConvertQResultToJson(QResult const& qResult) {
     boost::json::object obj;
-    obj["ok"] = this->ok;
-    obj["msg"] = this->msg;
-    obj["data"] = (this->ok ? result_to_json(this->data) : boost::json::array{});
+    obj["ok"] = qResult.ok;
+    obj["msg"] = qResult.msg;
+    obj["data"] = (qResult.ok ? this->ConvertPQXXResultToJson(qResult.data) : boost::json::array{});
     return boost::json::value{std::move(obj)};
-  }
-
-  boost::json::value QResult::DataAsJson() const {
-    if (!this->ok) { return boost::json::value{std::move(boost::json::array{})}; }
-    return result_to_json(this->data);
-  }
-
-  std::ostream& operator<<(std::ostream& os, pqxx::result const& result) {
-    os << result_to_json(result);
-    return os;
-  }
-
-  LogStream& operator<<(LogStream& stream, pqxx::result const& result) {
-    stream << result_to_json(result);
-    return stream;
-  }
-
-  std::ostream& operator<<(std::ostream& os, QResult const& qResult) {
-    os << qResult.Json();
-    return os;
-  }
-
-  LogStream& operator<<(LogStream& stream, QResult const& qResult) {
-    stream << qResult.Json();
-    return stream;
   }
 }

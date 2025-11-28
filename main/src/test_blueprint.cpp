@@ -47,7 +47,7 @@ int main(int argc, char argv[]) {
     bp.Varchar("name").Length(255).NotNull();
     bp.Numeric("price").Precision(9).Scale(2).Null();
     bp.Text("description").Null();
-    bp.Timestamp("utcdt").NotNull();
+    bp.Timestamp("utcdt").NotNull().Index();
     bp.Bit("active").N(1).NotNull().Default();
   });
 
@@ -58,6 +58,18 @@ int main(int argc, char argv[]) {
     bp.Timestamp("utcdt").NotNull().Default();
     bp.Bit("active").N(1).NotNull().Default();
   });
+
+  std::unordered_map<size_t, std::string> const& dataTypes = db.GetDataTypes();
+  for(const auto& [oid, typname] : dataTypes) {
+    Logger::Dbg() << "OID: " << oid << ", TYPE: " << typname;
+  }
+
+  QResult r = db.Exec("SELECT * FROM product ORDER BY uuid DESC LIMIT 10");
+  if (r.ok) {
+    Logger::Dbg() << db.ConvertQResultToJson(r) << '\n';
+    Logger::Dbg() << db.ConvertPQXXResultToJson(r.data) << '\n';
+  }
+
 
   migrator.Migrate(db);
   ioc.run();

@@ -32,15 +32,7 @@ namespace STNL {
     pqxx::result data;
     bool ok;
     std::string msg;
-    boost::json::value Json() const;
-    boost::json::value DataAsJson() const;
-    friend std::ostream& operator<<(std::ostream& os, QResult const& qResult);
-    friend LogStream& operator<<(LogStream& stream, QResult const& qResult);
   };
-  std::ostream& operator<<(std::ostream& os, pqxx::result const& result);
-  LogStream& operator<<(LogStream& stream, pqxx::result const& result);
-  std::ostream& operator<<(std::ostream& os, QResult const& qResult);
-  LogStream& operator<<(LogStream& stream, QResult const& qResult);
 
   
 
@@ -100,6 +92,10 @@ namespace STNL {
       std::vector<Column> GetTableColumns(std::string_view tableName = "");
       std::vector<std::string> GetTableIndexNames(std::string_view tableName);
       Blueprint QueryBlueprint(std::string_view tableName);
+      std::unordered_map<size_t /*oid*/, std::string /*typname*/> const& GetDataTypes();
+      static boost::json::value RowToJson(pqxx::row const& row, std::unordered_map<size_t, std::string> const& dataTypes);
+      boost::json::value ConvertPQXXResultToJson(pqxx::result const& result);
+      boost::json::value ConvertQResultToJson(QResult const& qResult);
 
       template<bool S = true, typename... Args>
       QResult Insert(std::string const& tableName, Args&& ...columnValuePairs) {
@@ -121,6 +117,7 @@ namespace STNL {
       QResult InsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn);
       std::future<QResult> QInsertBatch(std::string const& tableName, std::function<void(BatchInserter& batch)> populateBatchFn);
       
+      
       static std::string GetConnectionString(
         std::string_view dbName,
         std::string_view dbUser,
@@ -135,6 +132,7 @@ namespace STNL {
       asio::io_context& ioc_;
       asio::executor_work_guard<asio::io_context::executor_type> workGuard_;
       std::vector<std::thread> threadPool_;
+      std::unordered_map<size_t, std::string> dataTypes_;
   };
 }
 
