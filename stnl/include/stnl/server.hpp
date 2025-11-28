@@ -2,6 +2,7 @@
 #define STNL_SERVER_HPP
 
 #include "core.hpp"
+#include "db.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -9,9 +10,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 
-#include <string>
-#include <vector>
 #include <algorithm>
+#include <string>
+#include <map>
+#include <vector>
+#include <memory>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -21,7 +24,8 @@ using tcp = boost::asio::ip::tcp;
 
 
 namespace STNL {
-    
+
+class DB; // forward declaration
 class STNLModule; // forward delcaration
 class Request; // forward declaration
 class Middleware; // forward declaration
@@ -42,10 +46,13 @@ class Server : public std::enable_shared_from_this<Server> {
 public:
     Server(asio::io_context& ioc, tcp::endpoint endpoint, fs::path rootDirPath);
     
-    static http::message_generator Response(const Request& req, http::status status_code = http::status::ok);
-    static http::message_generator Response(const Request& req, const std::string& msg, http::status status_code = http::status::ok);
-    static http::message_generator Response(const Request& req, const fs::path& file_path, std::string content_type, http::status status_code = http::status::ok);
-    static http::message_generator Response(const Request& req, const boost::json::value& data, http::status status_code = http::status::ok);
+    void AddDatabase(std::string const& keyAlias, std::string& connectionString, size_t poolSize = 4, size_t numThreads = 4);
+    std::shared_ptr<DB> GetDatabase(std::string const& keyAlias = "default");
+
+    static http::message_generator Response(Request const& req, http::status status_code = http::status::ok);
+    static http::message_generator Response(Request const& req, const std::string& msg, http::status status_code = http::status::ok);
+    static http::message_generator Response(Request const& req, const fs::path& file_path, std::string content_type, http::status status_code = http::status::ok);
+    static http::message_generator Response(Request const& req, const boost::json::value& data, http::status status_code = http::status::ok);
 
     
     const Router& GetRouter() const;
@@ -99,10 +106,12 @@ private:
     void DoAccept();
     void OnAccept(beast::error_code ec, tcp::socket socket);
     void AddRoute(http::verb method, std::string path, RouteHandler handler);
+    asio::io_context& ioc_;
 
+    std::unordered_map<std::string, std::shared_ptr<DB>> databases_;
     std::vector<std::shared_ptr<STNLModule>> modulesVec_;
     std::unordered_map<volatile const void*, std::shared_ptr<STNLModule>, CharPtrHash, CharPtrEqual> modules_;
-    asio::io_context& ioc_;
+    
     tcp::acceptor acceptor_;  // Fixed: was missing type in original
     Router router_;
     std::vector<std::unique_ptr<Middleware>> middlewares_;

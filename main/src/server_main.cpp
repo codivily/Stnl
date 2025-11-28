@@ -7,6 +7,7 @@
 #include "stnl/server.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/request.hpp"
+#include "stnl/db.hpp";
 
 #include <boost/beast/version.hpp>
 #include <boost/beast/http/file_body.hpp>
@@ -28,19 +29,25 @@ namespace asio = boost::asio;
 namespace json = boost::json;
 
 using Logger = STNL::Logger;
+using Server = STNL::Server;
+using Request = STNL::Request;
+using STNLModule = STNL::STNLModule;
+using UploadedFile = STNL::UploadedFile;
+using DB = STNL::DB;
+using QResult = STNL::QResult;
 
-ServerMain::ServerMain(std::shared_ptr<STNL::Server> server) : STNL::STNLModule(std::move(server)) {}
+ServerMain::ServerMain(std::shared_ptr<Server> server) : STNLModule(std::move(server)) {}
 
-http::message_generator ServerMain::WebGetHome(const STNL::Request& req) {
-  return STNL::Server::Response(req, GetServer()->GetRootDirPath() / "index.html", "text/html");
+http::message_generator ServerMain::WebGetHome(Request const& req) {
+  return Server::Response(req, GetServer()->GetRootDirPath() / "index.html", "text/html");
 }
 
-http::message_generator ServerMain::ApiPostData(const STNL::Request& req) {
+http::message_generator ServerMain::ApiPostData(Request const& req) {
   boost::json::object reqData = req.data();
   boost::json::object resData;
   std::shared_ptr<Ticker> ticker = GetServer()->GetModule<Ticker>();
   std::vector<std::string> fpaths;
-  for(const STNL::UploadedFile& uf : req.files()) {
+  for(const UploadedFile& uf : req.files()) {
     fpaths.push_back(uf.file.string());
   }
   resData["headers"] = json::value_from(req.headers());
@@ -49,15 +56,29 @@ http::message_generator ServerMain::ApiPostData(const STNL::Request& req) {
   resData["status"] = true;
   resData["ticker"] = ticker->Increment();
   resData["files"] = json::value_from(fpaths);
-  return STNL::Server::Response(req, resData);
+  return Server::Response(req, resData);
+}
+
+
+http::message_generator ServerMain::ApiGetProduct(Request const& req) {
+  std::shared_ptr<DB> pDB = GetServer()->GetDatabase("default");
+  boost::json::object reqData = req.data();
+  boost::json::object queryData = req.query();
+  QResult r = pDB->Exec("SELECT * FROM product LIMIT 10");
+  boost::json::object resData;
+  resData["result"] = r.ok;
+  resData["data"] = pDB->ConvertPQXXResultToJson(r.data);
+  return Server::Response(req, resData);
 }
 
 
 void ServerMain::Setup() {
   Logger::Dbg() << ("ServerMain::Setup()");
   std::shared_ptr<ServerMain> self = shared_from_this();
-  GetServer()->Get("/", [self](const STNL::Request& req) -> http::message_generator { return self->WebGetHome(req); });
-  GetServer()->Post("/api/data", [self](const STNL::Request& req) -> http::message_generator { return self->ApiPostData(req); });
+  std::shared_ptr<Server> server = GetServer();
+  server->Get("/", [self](Request const& req) { return self->WebGetHome(req); });
+  server->Post("/api/data", [self](Request const& req) { return self->ApiPostData(req); });
+  server->Get("/api/product", [self](Request const& req) { return self->ApiGetProduct(req); });
 }
 
 

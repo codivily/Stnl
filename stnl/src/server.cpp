@@ -1,9 +1,11 @@
+#include "stnl/server.hpp"
 #include "stnl/core.hpp"
+#include "stnl/db.hpp"
 #include "stnl/stnl_module.hpp"
 #include "stnl/session.hpp"
-#include "stnl/server.hpp"
 #include "stnl/request.hpp"
 #include "stnl/middleware.hpp"
+#include "stnl/logger.hpp"
 
 
 #include <boost/beast/version.hpp>
@@ -15,6 +17,8 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <map>
+#include <memory>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -28,7 +32,21 @@ namespace STNL
     Server::Server(asio::io_context &ioc, tcp::endpoint endpoint, fs::path rootDirPath)
         : ioc_(ioc), acceptor_(ioc, endpoint), rootDirPath_(rootDirPath) {} // Fixed: acceptor needs ioc
 
-    http::message_generator Server::Response(const Request& req, const fs::path& file_path, std::string content_type, http::status status_code) {
+
+    void Server::AddDatabase(std::string const& keyAlias, std::string& connectionString, size_t poolSize, size_t numThreads) {
+        databases_.emplace(keyAlias, std::make_shared<DB>(connectionString, ioc_, poolSize, numThreads));
+    }
+
+    std::shared_ptr<DB> Server::GetDatabase(std::string const& keyAlias) {
+        auto it = databases_.find(keyAlias);
+        if (it == databases_.end()) {
+            Logger::Err() << std::format("Server::GetDatabase:: No database with this keyAlias found. KeyAlias: {}", keyAlias);
+            return std::shared_ptr<DB>(nullptr);
+        }
+        return it->second;
+    }
+
+    http::message_generator Server::Response(Request const& req, const fs::path& file_path, std::string content_type, http::status status_code) {
         if (!fs::exists(file_path) || !fs::is_regular_file(file_path)) {
             return Server::Response(req, http::status::not_found);
         }
@@ -44,14 +62,14 @@ namespace STNL
         return http::message_generator{std::move(res)};
     }
 
-    http::message_generator Server::Response(const Request& req, http::status status_code) {
+    http::message_generator Server::Response(Request const& req, http::status status_code) {
         http::response<http::empty_body> res{std::move(status_code), req.GetHttpReq().version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         res.prepare_payload();
         return http::message_generator{std::move(res)};
     }
     
-    http::message_generator Server::Response(const Request& req, const std::string& msg, http::status status_code) {
+    http::message_generator Server::Response(Request const& req, const std::string& msg, http::status status_code) {
         if (msg.empty()) {
             http::response<http::empty_body> res{std::move(status_code), req.GetHttpReq().version()};
             res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -66,7 +84,7 @@ namespace STNL
         return http::message_generator{std::move(res)};
     }
 
-    http::message_generator Server::Response(const Request& req, const boost::json::value& data, http::status status_code) {
+    http::message_generator Server::Response(Request const& req, const boost::json::value& data, http::status status_code) {
         http::response<http::string_body> res{std::move(status_code), req.GetHttpReq().version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
         res.set(http::field::content_type, "application/json");

@@ -1,7 +1,9 @@
 # Main executable
 
 set(SOURCES
-  src/test_blueprint.cpp
+  src/main.cpp
+  src/server_main.cpp
+  src/ticker.cpp
 )
 
 # Headers directory

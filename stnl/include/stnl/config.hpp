@@ -25,9 +25,15 @@ namespace STNL {
       static void Init(const fs::path& configPath);
       template <typename T>
       static boost::optional<T> Value(const std::string& keyPath, boost::optional<T> defaultValue = boost::none) {
-        if (!instance_) { return std::move(defaultValue); }
-        return std::move(instance_->GetValue<T>(keyPath, defaultValue));
+        if (!instance_) { return defaultValue; }
+        return instance_->GetValue<T>(keyPath, defaultValue);
       }
+
+      template <typename T>
+      static boost::optional<T> Value(std::string const& keyPath, T defaultValue) {
+        return Config::Value<T>(keyPath, boost::optional<T>(defaultValue));
+      }
+
     private:
       static Config* instance_;
       static std::mutex initMutex_;
@@ -57,6 +63,11 @@ namespace STNL {
           Logger::Err() << ("Config::GetValue (\"" + keyPath + "\") conversion error: " + e.what());
         }
         return boost::none;
+      }
+
+      template <typename T>
+      boost::optional<T> GetValue(std::string const& keyPath, T defaultValue) {
+        return this->GetValue<T>(keyPath, boost::optional<T>(defaultValue));
       }
 
       // Disallow copy and assignment

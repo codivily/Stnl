@@ -1,12 +1,12 @@
 
 #include "server_main.hpp"
 #include "ticker.hpp"
-#include "database.hpp"
 
 #include "stnl/server.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/middleware.hpp"
 #include "stnl/config.hpp"
+#include "stnl/db.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -20,15 +20,19 @@ namespace asio = boost::asio;
 namespace http = boost::beast::http;
 
 using Logger = STNL::Logger;
+using Config = STNL::Config;
+using Server = STNL::Server;
+using Request = STNL::Request;
+using Middleware = STNL::Middleware;
+using DB = STNL::DB;
 
- class BasicMiddleware : public STNL::Middleware {
+ class BasicMiddleware : public Middleware {
   public:
-    BasicMiddleware(std::shared_ptr<STNL::Server> server) : STNL::Middleware(std::move(server)) {}
-    boost::optional<http::message_generator> invoke(STNL::Request& req) override {
+    BasicMiddleware(std::shared_ptr<Server> server) : Middleware(std::move(server)) {}
+    boost::optional<http::message_generator> invoke(Request& req) override {
         Logger::Inf() << ("BasicMiddleware: Request for " + std::string(req.GetHttpReq().target()));
         return boost::none; // Continue processing
     }
-
     void Setup() override {
         Logger::Inf() << ("BasicMiddleware::Setup()");
     }
@@ -45,26 +49,36 @@ int main(int argc, char* argv[]) {
     Logger::Inf() << ("::main:: Server's rootDirPath: " + rootDirPath.string());
     
     if (fs::exists(rootDirPath / "config.local.json")) {
-        STNL::Config::Init(rootDirPath / "config.local.json");
+        Config::Init(rootDirPath / "config.local.json");
     } 
     else if (fs::exists(rootDirPath / "config.json")) {
-        STNL::Config::Init(rootDirPath / "config.json");
+        Config::Init(rootDirPath / "config.json");
     } 
     else {
-        STNL::Config::Init(rootDirPath / "config.json");
+        Config::Init(rootDirPath / "config.json");
     }
 
-    boost::optional<std::string> serverHost = STNL::Config::Value<std::string>("server.host", boost::optional<std::string>("127.0.0.1"));
-    boost::optional<int> serverPort = STNL::Config::Value<int>("server.port", boost::optional<int>(8080));
+    // Setup the database connection
+    auto dbName = Config::Value<std::string>("database.name", std::string("stnl_db"));
+    auto dbUser = Config::Value<std::string>("database.user", std::string("postgres"));
+    auto dbPassword = Config::Value<std::string>("database.password", std::string("!stnl1301"));
+    auto dbHost = Config::Value<std::string>("database.host", std::string("localhost"));
+    auto dbPort = Config::Value<int>("database.port", 5432);
+    auto dbSchema = Config::Value<std::string>("database.schema", std::string("public"));
+
+    std::string connStr = DB::GetConnectionString(*dbName, *dbUser, *dbPassword, *dbHost, *dbPort, *dbSchema);
+
+    boost::optional<std::string> serverHost = Config::Value<std::string>("server.host", boost::optional<std::string>(std::string("127.0.0.1")));
+    boost::optional<int> serverPort = Config::Value<int>("server.port", boost::optional<int>(8080));
     if (serverHost) { endpoint.address(asio::ip::make_address(serverHost.value())); }
     if (serverPort) { endpoint.port(serverPort.value()); }
     Logger::Inf() << ("::main:: Server listening on " + endpoint.address().to_string() + ":" + std::to_string(endpoint.port()));
 
-    std::shared_ptr<STNL::Server> server = std::make_shared<STNL::Server>(ioc, endpoint, rootDirPath);
+    std::shared_ptr<Server> server = std::make_shared<Server>(ioc, endpoint, rootDirPath);
     
     server->Use<BasicMiddleware>();
+    server->AddDatabase("default", connStr);
     
-    server->AddModule<Database>();
     server->AddModule<ServerMain>();
     server->AddModule<Ticker>();
     server->Run();
