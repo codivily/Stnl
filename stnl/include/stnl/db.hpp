@@ -2,8 +2,9 @@
 #define STNL_DB_UTILS_HPP
 
 #include "connection_pool.hpp"
-#include "blueprint.hpp"
 #include "column.hpp"
+#include "blueprint.hpp"
+#include "migration.hpp"
 #include "inserter.hpp"
 #include "utils.hpp"
 #include "logger.hpp"
@@ -86,7 +87,7 @@ namespace STNL {
           return Utils::AsFuture<ResultType>(ioc_, std::move(fn));
       }
 
-      bool TableExists(std::string_view tableName);
+      bool TableExists(std::string_view const tableName);
       std::vector<Column> GetTableColumns(std::string_view tableName = "");
       std::vector<std::string> GetTableIndexNames(std::string_view tableName);
       Blueprint QueryBlueprint(std::string_view tableName);
@@ -119,6 +120,8 @@ namespace STNL {
       void Work(std::function<void(pqxx::work &tx)> doWorkFn);
       std::future<void> QWork(std::function<void(pqxx::work &tx)> doWork);
       
+      Migration& GetMigration();
+      
       static std::string GetConnectionString(
         std::string_view dbName,
         std::string_view dbUser,
@@ -134,6 +137,7 @@ namespace STNL {
       asio::executor_work_guard<asio::io_context::executor_type> workGuard_;
       std::vector<std::thread> threadPool_;
       std::unordered_map<size_t, std::string> dataTypes_;
+      Migration migration_;
   };
 }
 

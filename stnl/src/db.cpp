@@ -189,9 +189,12 @@ namespace STNL {
     });
   }
 
+  Migration& DB::GetMigration() {
+    return migration_;
+  }
 
 
-  bool DB::TableExists(std::string_view tableName) {
+  bool DB::TableExists(std::string_view const tableName) {
     std::string qSQL = Utils::FixIndent(R"(
         SELECT 1
         FROM information_schema.tables

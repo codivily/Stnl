@@ -13,18 +13,22 @@ namespace STNL {
 
   Blueprint::Blueprint(const std::string tableName) : tableName_(std::move(tableName)) {}
   
-  std::string& Blueprint::GetTableName() { return tableName_; }
-  const std::map<std::string, Column>& Blueprint::GetColumns() { return columns_; }
+  std::string const& Blueprint::GetTableName() const { return tableName_; }
+  std::unordered_map<std::string, Column> const& Blueprint::GetColumns() const { return columns_; }
 
   Column& Blueprint::GetOrAddColumn(std::string realName) {
     std::string name = Utils::StringToLower(realName);
-    std::map<std::string, Column>::iterator it = columns_.find(name);
+    auto it = columns_.find(name);
     if (it == columns_.end()) {
-      auto result = columns_.emplace(name, Column{this->tableName_, std::move(realName), ColumnType::Undefined});
-      // result.second is true (inserted), result.first is the iterator
-      return result.first->second;
+      auto [newIt, inserted] = columns_.emplace(name, Column{this->tableName_, std::move(realName), ColumnType::Undefined});
+      if (inserted) { columnNames_.emplace_back(name); }
+      return newIt->second;
     }
     return it->second;
+  }
+
+  std::vector<std::string> const& Blueprint::GetColumnNames() const {
+    return columnNames_;
   }
 
   void Blueprint::AddColumn(Column&& col) {

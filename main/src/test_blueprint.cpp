@@ -1,5 +1,6 @@
 
 #include "stnl/blueprint.hpp"
+#include "stnl/migration.hpp"
 #include "stnl/migrator.hpp"
 #include "stnl/db.hpp"
 #include "stnl/logger.hpp"
@@ -22,6 +23,7 @@ namespace json = boost::json;
 
 using Logger = STNL::Logger;
 using DB = STNL::DB;
+using Migration = STNL::Migration;
 using Migrator = STNL::Migrator;
 using Blueprint = STNL::Blueprint;
 using QResult = STNL::QResult;
@@ -39,9 +41,10 @@ int main(int argc, char argv[]) {
   asio::io_context ioc;
   Logger::Init(ioc);
   DB db(connStr, ioc, 24, 24);
+
   //
-  Migrator migrator;
-  migrator.Table("product", [](Blueprint& bp) {
+  Migration migration;
+  migration.Table("product", [](Blueprint& bp) {
     bp.BigInt("id").Identity().Unique();
     bp.UUID("uuid").Default().Index();
     bp.Varchar("name").Length(255).NotNull();
@@ -51,13 +54,18 @@ int main(int argc, char argv[]) {
     bp.Bit("active").N(1).NotNull().Default();
   });
 
-  migrator.Table("category", [](Blueprint& bp) {
+  migration.Table("category", [](Blueprint& bp) {
     bp.BigInt("id").Identity().Unique();
     bp.UUID("uuid").Null().Index();
     bp.Varchar("name").NotNull().Default("'<empty>'");
     bp.Timestamp("utcdt").NotNull().Default();
     bp.Bit("active").N(1).NotNull().Default();
   });
+
+  // Migrate
+  Migrator migrator;
+  migrator.Migrate(db, migration);
+  migrator.Migrate(db);
 
   // std::unordered_map<size_t, std::string> const& dataTypes = db.GetDataTypes();
   // for(const auto& [oid, typname] : dataTypes) {
@@ -79,7 +87,5 @@ int main(int argc, char argv[]) {
   Logger::Dbg() << "Waking work to finish";
   fut.get();
   Logger::Dbg() << "Work finished";
-
-  migrator.Migrate(db);
   ioc.run();
 }

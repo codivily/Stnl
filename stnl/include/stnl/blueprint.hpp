@@ -28,8 +28,9 @@ namespace STNL {
     public:
       explicit Blueprint(const std::string tableName);
       virtual ~Blueprint() = default;
-      std::string& GetTableName();
-      const std::map<std::string, Column>& GetColumns();
+      std::string const& GetTableName() const;
+      std::unordered_map<std::string, Column> const& GetColumns() const;
+      std::vector<std::string> const& GetColumnNames() const;
 
       BigIntProxy BigInt(std::string name);
       IntegerProxy Integer(std::string name);
@@ -47,7 +48,8 @@ namespace STNL {
       void AddColumn(Column&& col);
     private:
       std::string tableName_;
-      std::map<std::string, Column> columns_;
+      std::unordered_map<std::string, Column> columns_;
+      std::vector<std::string> columnNames_;
 
       Column& GetOrAddColumn(std::string realName);
 

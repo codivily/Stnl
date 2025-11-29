@@ -1,6 +1,10 @@
 
+
+
 #include "stnl/migrator.hpp"
+#include "stnl/column.hpp"
 #include "stnl/blueprint.hpp"
+#include "stnl/migration.hpp"
 #include "stnl/utils.hpp"
 #include "stnl/logger.hpp"
 #include "stnl/db.hpp"
@@ -27,23 +31,25 @@ namespace STNL {
         );
     }
 
-    void Migrator::Table(const std::string& tableName, std::function<void(Blueprint&)> adaptFn) {
-        std::string key = Utils::StringToLower(tableName);
-        auto [it, inserted] = blueprints_.emplace(key, tableName);
-        adaptFn(it->second);
+    void Migrator::Migrate(DB& db, Migration const& migration) {
+        std::vector<std::string> const& tableNames = migration.GetTableNames();
+        std::unordered_map<std::string, Blueprint> const& blueprints = migration.GetBlueprints();
+        for (std::string const& key : tableNames) {
+            Blueprint const& bp = blueprints.at(key);
+            try {
+                ApplyBlueprint(db, bp);
+            }
+            catch(std::exception const& e) {
+                Logger::Err() << "Migrator::Migrate: Error: " + std::string(e.what());
+            }
+        }
     }
 
     void Migrator::Migrate(DB& db) {
-        for(auto it = blueprints_.begin(); it != blueprints_.end(); ++it) {
-        try {
-            ApplyBlueprint(db, it->second);
-        } catch(std::exception& e) {
-            Logger::Err() << ("Migrator::Migrate: Error: " + std::string(e.what()));
-        }
-        }
+        this->Migrate(db, db.GetMigration());
     }
 
-    std::string Migrator::GenerateSQLType(const Column& col) {
+    std::string Migrator::GenerateSQLType(Column const& col) {
         // Note: IDENTITY is handled here as it is part of the type declaration in PostgreSQL
         switch (col.type) {
             case ColumnType::BigInt: 
@@ -86,24 +92,26 @@ namespace STNL {
 
 
 
-  std::string Migrator::GenerateCreateSQL(Blueprint& bp) {
+  std::string Migrator::GenerateCreateSQL(Blueprint const& bp) {
       std::stringstream ss;
       ss << std::format("CREATE TABLE {} (\n", bp.GetTableName());
-      const auto& columns = bp.GetColumns();
+      std::vector<std::string> const& columnNames = bp.GetColumnNames();
+      std::unordered_map<std::string, Column> const& columns = bp.GetColumns();
+
       size_t i = 0;
-      for (const auto& pair : columns) {
-        const Column& col = pair.second;
+      for (std::string const& key : columnNames) {
+        Column const& col = columns.at(key);
         ss << std::format("  {} {}{}", col.realName, GenerateSQLType(col), GenerateSQLConstraints(col));
         if (i < columns.size() - 1) {
           ss << ',';
         }
         ss << '\n';
         i++;
-      }
+      }      
       ss << ");\n";
       i = 0; // reset for reuse
-      for (const auto& pair : columns) {
-        const Column& col = pair.second;
+      for (std::string const& key : columnNames) {
+        Column const& col = columns.at(key);
         if (col.unique || col.index) {
             if (col.unique) {
                 ss << std::format("CREATE UNIQUE INDEX {} ON {} ({});\n",
@@ -150,9 +158,9 @@ namespace STNL {
     
     // --- Core ApplyBlueprint Logic ---
 
-    void Migrator::ApplyBlueprint(DB& db, Blueprint& bp) {
+    void Migrator::ApplyBlueprint(DB& db, Blueprint const& bp) {
         // NOTE: Removed previous Dbg/QExec calls to focus on migration logic.
-        std::string tableName = bp.GetTableName();
+        std::string const& tableName = bp.GetTableName();
         
         // 1. Check for table existence
         bool bTableExists = db.TableExists(tableName);
@@ -175,15 +183,14 @@ namespace STNL {
         // 3. Compare blueprints and generate ALTER SQL
         std::vector<std::string> alterStatements;
         
-        const auto& desiredColumns = bp.GetColumns();
-        const auto& currentColumns = oldBp.GetColumns();
+        std::vector<std::string> const& desiredColumnNames = bp.GetColumnNames();
+        auto const& desiredColumns = bp.GetColumns();
+        auto const& currentColumns = oldBp.GetColumns();
 
-        for (const auto& pair : desiredColumns) {
-            const std::string& desiredNameLower = pair.first;
-            const Column& desiredCol = pair.second;
-            
+        // for (const auto& pair : desiredColumns) {
+        for (std::string const& desiredNameLower : desiredColumnNames) {
+            Column const& desiredCol = desiredColumns.at(desiredNameLower);
             auto it = currentColumns.find(desiredNameLower);
-            
             // A. Column does not exist -> ADD COLUMN
             if (it == currentColumns.end()) {
                 std::string addSQL = Utils::FixIndent(std::format(R"(
@@ -193,9 +200,9 @@ namespace STNL {
                 Logger::Inf() << std::format("Migrator: {}", addSQL);
                 continue;
             }
-            
+
             // B. Column exists -> Check for MODIFICATIONS
-            const Column& currentCol = it->second;
+            Column const& currentCol = it->second;
 
             // Check 1: Type and Parameters (Length, Precision)
             if (!ColumnTypeAndParamsMatch(currentCol, desiredCol)) {

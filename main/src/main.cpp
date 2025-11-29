@@ -7,6 +7,7 @@
 #include "stnl/middleware.hpp"
 #include "stnl/config.hpp"
 #include "stnl/db.hpp"
+#include "stnl/blueprint.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -25,6 +26,7 @@ using Server = STNL::Server;
 using Request = STNL::Request;
 using Middleware = STNL::Middleware;
 using DB = STNL::DB;
+using Blueprint = STNL::Blueprint;
 
  class BasicMiddleware : public Middleware {
   public:
@@ -78,7 +80,16 @@ int main(int argc, char* argv[]) {
     
     server.Use<BasicMiddleware>();
     server.AddDatabase("default", connStr);
-    
+
+    // add migration to the database that will later run when the server starts
+    auto pDB = server.GetDatabase("default");
+    pDB->GetMigration().Table("asset", [](Blueprint& bp) {
+        bp.BigInt("id").Identity().Index();
+        bp.UUID("uuid").NotNull().Default().Unique();
+        bp.Varchar("name").NotNull();
+        bp.Bit("active").N(1).NotNull().Default();
+    });
+
     server.AddModule<ServerMain>();
     server.AddModule<Ticker>();
     server.Run();

@@ -2,8 +2,9 @@
 #ifndef STNL_MIGRATOR_HPP
 #define STNL_MIGRATOR_HPP
 
-#include "blueprint.hpp"
 #include "column.hpp"
+#include "blueprint.hpp"
+#include "migration.hpp"
 
 #include <pqxx/pqxx>
 
@@ -18,14 +19,13 @@ namespace STNL {
   class Migrator {
     public:
       Migrator() = default;
-      void Table(const std::string& tableName, std::function<void(Blueprint&)> adaptFn);
+      void Migrate(DB& db, Migration const& migration);
       void Migrate(DB& db);
     private:
-      std::map<std::string, Blueprint> blueprints_;
-      void ApplyBlueprint(DB& db, Blueprint& bp);
-      std::string GenerateSQLType(const Column& col);
-      std::string GenerateCreateSQL(Blueprint& bp);
-      std::string GenerateSQLConstraints(const Column& col);
+      void ApplyBlueprint(DB& db, Blueprint const& bp);
+      std::string GenerateSQLType(Column const& col);
+      std::string GenerateCreateSQL(Blueprint const& bp);
+      std::string GenerateSQLConstraints(Column const& col);
   };
 }
 

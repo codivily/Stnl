@@ -11,6 +11,7 @@ set(STNL_SOURCES
     src/column.cpp
     src/inserter.cpp
     src/blueprint.cpp
+    src/migration.cpp
     src/migrator.cpp
     src/connection_pool.cpp
     src/db.cpp

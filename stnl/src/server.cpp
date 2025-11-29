@@ -5,6 +5,8 @@
 #include "stnl/session.hpp"
 #include "stnl/request.hpp"
 #include "stnl/middleware.hpp"
+#include "stnl/migration.hpp"
+#include "stnl/migrator.hpp"
 #include "stnl/logger.hpp"
 
 
@@ -34,7 +36,8 @@ namespace STNL
 
 
     void Server::AddDatabase(std::string const& keyAlias, std::string& connectionString, size_t poolSize, size_t numThreads) {
-        databases_.emplace(keyAlias, std::make_shared<DB>(connectionString, ioc_, poolSize, numThreads));
+        auto [it, inserted] = databases_.emplace(keyAlias, std::make_shared<DB>(connectionString, ioc_, poolSize, numThreads));
+        if (inserted) { databaseKeyAliases_.emplace_back(keyAlias); }
     }
 
     std::shared_ptr<DB> Server::GetDatabase(std::string const& keyAlias) {
@@ -167,6 +170,19 @@ namespace STNL
         }
     }
 
+    void Server::RunDatabaseMigrations() {
+        Migrator migrator;
+        for(std::string& dbKeyAlias: databaseKeyAliases_) {
+            try {
+                std::shared_ptr<DB> pDB = databases_.at(dbKeyAlias);
+                migrator.Migrate(*pDB /*std::shared_ptr<BD>*/);
+            }
+            catch(std::exception const& e) {
+                Logger::Err() << "Server::RunDatabaseMigrations: " << std::string(e.what());
+            }
+        }
+    }
+
     void Server::LaunchModules() {
         for (const std::shared_ptr<STNLModule>& m : modulesVec_) {
             if (m) {
@@ -183,6 +199,7 @@ namespace STNL
 
     void Server::Run()
     {
+        RunDatabaseMigrations();
         SetupModules();
         SetupMiddlewares();
         LaunchModules();

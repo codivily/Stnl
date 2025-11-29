@@ -99,6 +99,7 @@ public:
     asio::io_context& GetIOC();
 
 private:
+    void RunDatabaseMigrations();
     void SetupModules();
     void SetupMiddlewares();
     void LaunchModules();
@@ -108,6 +109,8 @@ private:
     asio::io_context& ioc_;
 
     std::unordered_map<std::string, std::shared_ptr<DB>> databases_;
+    std::vector<std::string> databaseKeyAliases_;
+
     std::vector<std::shared_ptr<STNLModule>> modulesVec_;
     std::unordered_map<volatile const void*, std::shared_ptr<STNLModule>, CharPtrHash, CharPtrEqual> modules_;
     
