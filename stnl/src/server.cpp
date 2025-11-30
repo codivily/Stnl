@@ -171,11 +171,15 @@ namespace STNL
     }
 
     void Server::RunDatabaseMigrations() {
+        /* call the modules setupMigrations() method before runing the migrations for each configured database */
+        for (const std::shared_ptr<STNLModule>& m : modulesVec_) {
+            if (m) { m->SetupMigrations(); }
+        }  
         Migrator migrator;
         for(std::string& dbKeyAlias: databaseKeyAliases_) {
             try {
                 std::shared_ptr<DB> pDB = databases_.at(dbKeyAlias);
-                migrator.Migrate(*pDB /*std::shared_ptr<BD>*/);
+                migrator.Migrate(*pDB/*std::shared_ptr<BD>*/);
             }
             catch(std::exception const& e) {
                 Logger::Err() << "Server::RunDatabaseMigrations: " << std::string(e.what());

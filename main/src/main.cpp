@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     server.AddDatabase("default", connStr);
 
     // add migration to the database that will later run when the server starts
-    auto pDB = server.GetDatabase("default");
+    auto pDB = server.GetDatabase();
     pDB->GetMigration().Table("asset", [](Blueprint& bp) {
         bp.BigInt("id").Identity().Index();
         bp.UUID("uuid").NotNull().Default().Unique();

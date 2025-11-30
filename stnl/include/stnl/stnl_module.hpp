@@ -14,6 +14,7 @@ namespace STNL {
     inline static volatile const char sType{};
     ~STNLModule() = default;
     STNLModule(Server& server);
+    virtual void SetupMigrations() {};
     virtual void Setup() {};
     virtual void Launch() {};
     protected:

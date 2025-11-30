@@ -8,6 +8,8 @@
 #include "stnl/logger.hpp"
 #include "stnl/request.hpp"
 #include "stnl/db.hpp"
+#include "stnl/blueprint.hpp"
+#include "stnl/migration.hpp"
 
 #include <boost/beast/version.hpp>
 #include <boost/beast/http/file_body.hpp>
@@ -22,6 +24,7 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include<functional>
 
 namespace fs = boost::filesystem;
 namespace http = beast::http;
@@ -35,6 +38,8 @@ using STNLModule = STNL::STNLModule;
 using UploadedFile = STNL::UploadedFile;
 using DB = STNL::DB;
 using QResult = STNL::QResult;
+using Migration = STNL::Migration;
+using Blueprint = STNL::Blueprint;
 
 ServerMain::ServerMain(Server& server) : STNLModule(server) {}
 
@@ -71,6 +76,17 @@ http::message_generator ServerMain::ApiGetProduct(Request const& req) {
   return Server::Response(req, resData);
 }
 
+void ServerMain::SetupMigrations() {
+  auto pDB = server_.GetDatabase();
+  if (pDB) {
+    pDB->GetMigration().Table("project", [](Blueprint& bp) {
+          bp.BigInt("id").Identity().Index();
+          bp.UUID("uuid").NotNull().Default().Unique();
+          bp.Varchar("name").NotNull();
+          bp.Bit("active").N(1).NotNull().Default();
+    });
+  }
+}
 
 void ServerMain::Setup() {
   Logger::Dbg() << ("ServerMain::Setup()");
