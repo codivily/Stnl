@@ -1,26 +1,25 @@
-# Define the root list of all source files for the STNL library
+# List all source files for the STNL library
 set(STNL_SOURCES
-    src/utils.cpp
-    src/logger.cpp
-    src/stnl_module.cpp
-    src/session.cpp
-    src/server.cpp
-    src/request.cpp
-    src/middleware.cpp
-    src/config.cpp
-    src/column.cpp
-    src/inserter.cpp
-    src/blueprint.cpp
-    src/migration.cpp
-    src/migrator.cpp
-    src/connection_pool.cpp
-    src/db.cpp
+  # Core
+  src/core/utils.cpp
+  src/core/logger.cpp
+  src/core/stnl_module.cpp
+  src/core/config.cpp
+  # HTTP
+  src/http/server.cpp
+  src/http/request.cpp
+  src/http/session.cpp
+  src/http/middleware.cpp
+  # DB
+  src/db/db.cpp
+  src/db/blueprint.cpp
+  src/db/migration.cpp
+  src/db/migrator.cpp
+  src/db/column.cpp
+  src/db/inserter.cpp
+  src/db/connection_pool.cpp
 )
 
-# ----------------------------------------------------
-# 1. Component Libraries (Maximize Parallelism)
-# ----------------------------------------------------
-# Loop through all source files and create a separate static library for each.
 # This maximizes parallel compilation and greatly improves incremental builds.
 list(LENGTH STNL_SOURCES STNL_SOURCES_COUNT)
 message(STATUS "Creating ${STNL_SOURCES_COUNT} static library components for STNL.")

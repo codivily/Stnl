@@ -1,13 +1,13 @@
 
-#include "server_main.hpp"
-#include "ticker.hpp"
+#include "modules/app/app.hpp"
+#include "modules/ticker/ticker.hpp"
 
-#include "stnl/server.hpp"
-#include "stnl/logger.hpp"
-#include "stnl/middleware.hpp"
-#include "stnl/config.hpp"
-#include "stnl/db.hpp"
-#include "stnl/blueprint.hpp"
+#include "stnl/http/server.hpp"
+#include "stnl/core/logger.hpp"
+#include "stnl/http/middleware.hpp"
+#include "stnl/core/config.hpp"
+#include "stnl/db/db.hpp"
+#include "stnl/db/blueprint.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
         bp.Bit("active").N(1).NotNull().Default();
     });
 
-    server.AddModule<ServerMain>();
+    server.AddModule<App>();
     server.AddModule<Ticker>();
     server.Run();
 
