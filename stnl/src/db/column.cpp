@@ -1,11 +1,12 @@
 
+#include "stnl/db/types.hpp"
 #include "stnl/db/column.hpp"
 #include "stnl/core/utils.hpp"
 
 
 namespace STNL
 {
-  Column::Column(std::string colTableName, std::string colRealName, ColumnType colType)
+  Column::Column(std::string colTableName, std::string colRealName, SQLDataType colType)
     : tableName(colTableName),
       realName(colRealName), 
       type(std::move(colType)),
@@ -21,7 +22,7 @@ namespace STNL
   }
 
   BigIntProxy::BigIntProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::BigInt;
+    col.type = SQLDataType::BigInt;
   }
 
   BigIntProxy& BigIntProxy::Identity(bool v) {
@@ -38,7 +39,7 @@ namespace STNL
   }
 
   IntegerProxy::IntegerProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Integer;
+    col.type = SQLDataType::Integer;
   }
 
   IntegerProxy& IntegerProxy::Identity(bool const& v) {
@@ -56,11 +57,11 @@ namespace STNL
 
 
   SmallIntProxy::SmallIntProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::SmallInt;
+    col.type = SQLDataType::SmallInt;
   }
 
   NumericProxy::NumericProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Numeric;
+    col.type = SQLDataType::Numeric;
     col.precision = 9;
     col.scale = 0;
   }
@@ -76,7 +77,7 @@ namespace STNL
   }
 
   BitProxy::BitProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Bit;
+    col.type = SQLDataType::Bit;
     col.length = 1;
   }
 
@@ -90,7 +91,7 @@ namespace STNL
   }
 
   CharProxy::CharProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Char;
+    col.type = SQLDataType::Char;
     col.length = 1;
   }
 
@@ -108,7 +109,7 @@ namespace STNL
   }
 
   VarcharProxy::VarcharProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Varchar;
+    col.type = SQLDataType::Varchar;
     col.length = 255;
   }
 
@@ -126,7 +127,7 @@ namespace STNL
   }
 
   BooleanProxy::BooleanProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Boolean;
+    col.type = SQLDataType::Boolean;
   }
 
   BooleanProxy& BooleanProxy::Default(std::string const& v) {
@@ -134,7 +135,7 @@ namespace STNL
   }
 
   DateProxy::DateProxy(Column &c) : ColumnProxy(c) {
-    col.type = ColumnType::Date;
+    col.type = SQLDataType::Date;
   }
 
   DateProxy& DateProxy::Default(std::string const& v) {
@@ -146,7 +147,7 @@ namespace STNL
   }
 
   TimestampProxy::TimestampProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Timestamp;
+    col.type = SQLDataType::Timestamp;
   }
 
   TimestampProxy& TimestampProxy::Default(std::string const& v) {
@@ -158,7 +159,7 @@ namespace STNL
   }
 
   UUIDProxy::UUIDProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::UUID;
+    col.type = SQLDataType::UUID;
   }
 
   UUIDProxy& UUIDProxy::Default(std::string const& v) {
@@ -174,7 +175,7 @@ namespace STNL
   }
 
   TextProxy::TextProxy(Column& c) : ColumnProxy(c) {
-    col.type = ColumnType::Text;
+    col.type = SQLDataType::Text;
   }
   
 } // namespace STNL

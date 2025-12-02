@@ -257,7 +257,7 @@ namespace STNL {
           std::string dataType = row[sfi.Index("data_type")].as<std::string>();
           std::string isNullable = row[sfi.Index("is_nullable")].as<std::string>();
           
-          Column col(table, colName, ColumnType::Undefined); 
+          Column col(table, colName, SQLDataType::Undefined); 
 
           std::string standardIndexName = Utils::StringToLower(std::format("{}_{}_idx", table, colName));
           std::string uniqueIndexName = Utils::StringToLower(std::format("{}_{}_key", table, colName));
@@ -271,37 +271,37 @@ namespace STNL {
           col.nullable = (isNullable == "YES");
 
           // B. Handle Data Types and Attributes
-          if (dataType == "bigint") {  col.type = ColumnType::BigInt; }
-          else if (dataType == "integer") { col.type = ColumnType::Integer; }
-          else if (dataType == "smallint") {  col.type = ColumnType::SmallInt;  }
+          if (dataType == "bigint") {  col.type = SQLDataType::BigInt; }
+          else if (dataType == "integer") { col.type = SQLDataType::Integer; }
+          else if (dataType == "smallint") {  col.type = SQLDataType::SmallInt;  }
           else if (dataType == "numeric") {
-              col.type = ColumnType::Numeric;
+              col.type = SQLDataType::Numeric;
               col.precision = row[sfi.Index("numeric_precision")].as<unsigned short>(0); 
               col.scale = row[sfi.Index("numeric_scale")].as<unsigned short>(0);     
           }
           else if (dataType == "bit") {
-              col.type = ColumnType::Bit;
+              col.type = SQLDataType::Bit;
               col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(1);
           }
           else if (dataType == "character") {
-              col.type = ColumnType::Char;
+              col.type = SQLDataType::Char;
               col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(0);
           }
           else if (dataType == "character varying") {
-              col.type = ColumnType::Varchar;
+              col.type = SQLDataType::Varchar;
               col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(255);
           }
-          else if (dataType == "boolean") { col.type = ColumnType::Boolean; }
-          else if (dataType == "date") { col.type = ColumnType::Date; }
+          else if (dataType == "boolean") { col.type = SQLDataType::Boolean; }
+          else if (dataType == "date") { col.type = SQLDataType::Date; }
           else if (dataType.find("timestamp") != std::string::npos) { 
-              col.type = ColumnType::Timestamp;
+              col.type = SQLDataType::Timestamp;
               col.length = row[sfi.Index("numeric_precision")].as<std::size_t>(6);
           }
-          else if (dataType == "uuid") { col.type = ColumnType::UUID; }
-          else if (dataType == "text") { col.type = ColumnType::Text; }
+          else if (dataType == "uuid") { col.type = SQLDataType::UUID; }
+          else if (dataType == "text") { col.type = SQLDataType::Text; }
           else {
               STNL::Logger::Wrn() << ("DB::GetTableColumns: Unsupported data type: " + dataType + " for column " + colName);
-              col.type = ColumnType::Undefined; 
+              col.type = SQLDataType::Undefined; 
           }
 
           // C. Handle IDENTITY 

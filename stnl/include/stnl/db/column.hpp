@@ -1,33 +1,17 @@
 #ifndef STNL_COLUMN_HPP
 #define STNL_COLUMN_HPP
 
+#include "types.hpp"
 #include <boost/optional.hpp>
 #include <string>
 
 namespace STNL {
 
-  enum ColumnType {
-    Undefined,
-    //
-    BigInt,
-    Integer,
-    SmallInt,
-    Numeric,
-    Bit,
-    Char,
-    Varchar,
-    Boolean,
-    Date,
-    Timestamp,
-    UUID,
-    Text
-  };
-
   struct Column {
       std::string tableName;
       std::string realName;
       std::string name;
-      ColumnType type;
+      SQLDataType type;
       std::size_t length;
       bool identity;
       bool index;
@@ -36,7 +20,7 @@ namespace STNL {
       unsigned short precision;
       unsigned short scale;
       std::string defaultValue;
-      Column(std::string tableName, std::string colRealName, ColumnType colType);
+      Column(std::string tableName, std::string colRealName, SQLDataType colType);
   };
 
   

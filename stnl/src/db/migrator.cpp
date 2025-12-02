@@ -1,6 +1,7 @@
 
 
 
+#include "stnl/db/types.hpp"
 #include "stnl/db/migrator.hpp"
 #include "stnl/db/column.hpp"
 #include "stnl/db/blueprint.hpp"
@@ -52,27 +53,27 @@ namespace STNL {
     std::string Migrator::GenerateSQLType(Column const& col) {
         // Note: IDENTITY is handled here as it is part of the type declaration in PostgreSQL
         switch (col.type) {
-            case ColumnType::BigInt: 
+            case SQLDataType::BigInt: 
                 return col.identity ? "BIGINT GENERATED ALWAYS AS IDENTITY" : "BIGINT";
-            case ColumnType::Integer: 
+            case SQLDataType::Integer: 
                 return col.identity ? "INTEGER GENERATED ALWAYS AS IDENTITY" : "INTEGER";
-            case ColumnType::SmallInt: 
+            case SQLDataType::SmallInt: 
                 return col.identity ? "SMALLINT GENERATED ALWAYS AS IDENTITY" : "SMALLINT";
-            case ColumnType::Numeric: 
+            case SQLDataType::Numeric: 
                 return std::format("NUMERIC({},{})", col.precision, col.scale);
-            case ColumnType::Varchar: 
+            case SQLDataType::Varchar: 
                 return std::format("VARCHAR({})", col.length);
-            case ColumnType::Char:
+            case SQLDataType::Char:
                 return std::format("CHAR({})", col.length);
-            case ColumnType::Text: return "TEXT";
-            case ColumnType::Boolean: return "BOOLEAN";
-            case ColumnType::Date: return "DATE";
-            case ColumnType::Timestamp:
+            case SQLDataType::Text: return "TEXT";
+            case SQLDataType::Boolean: return "BOOLEAN";
+            case SQLDataType::Date: return "DATE";
+            case SQLDataType::Timestamp:
                 // Use col.length for fractional second precision (0-6)
                 return std::format("TIMESTAMP({}) WITH TIME ZONE", col.precision); 
-            case ColumnType::UUID: return "UUID";
-            case ColumnType::Bit: return std::format("BIT({})", col.length);
-            case ColumnType::Undefined: 
+            case SQLDataType::UUID: return "UUID";
+            case SQLDataType::Bit: return std::format("BIT({})", col.length);
+            case SQLDataType::Undefined: 
             default: 
                 return "NULL";
         }
@@ -134,20 +135,20 @@ namespace STNL {
     }
 
     // Helper to check if type and type parameters match (Length, Precision, Identity)
-    static bool ColumnTypeAndParamsMatch(const Column& current, const Column& desired) {
+    static bool SQLDataTypeAndParamsMatch(const Column& current, const Column& desired) {
         if (current.type != desired.type) {
             Logger::Dbg() << "type-mismatch: " << current.name;
             return false;
         }
-        if (desired.type == ColumnType::Numeric) {
+        if (desired.type == SQLDataType::Numeric) {
             if (current.precision != desired.precision || current.scale != desired.scale) {
                 Logger::Dbg() << "numberic-precision-mismatch: " << current.name;
                 return false;
             }
         }
-        else if (desired.type == ColumnType::Varchar || 
-                  desired.type == ColumnType::Char || 
-                  desired.type == ColumnType::Bit) {
+        else if (desired.type == SQLDataType::Varchar || 
+                  desired.type == SQLDataType::Char || 
+                  desired.type == SQLDataType::Bit) {
             if (current.length != desired.length) {
                 Logger::Dbg() << "(varchar|char|bit)-length-mismatch: " << current.name;
                 return false;
@@ -205,7 +206,7 @@ namespace STNL {
             Column const& currentCol = it->second;
 
             // Check 1: Type and Parameters (Length, Precision)
-            if (!ColumnTypeAndParamsMatch(currentCol, desiredCol)) {
+            if (!SQLDataTypeAndParamsMatch(currentCol, desiredCol)) {
                 // Generate ALTER COLUMN TYPE statement
                 std::string typeSQL = Utils::FixIndent(std::format(R"(
                     ALTER TABLE {} ALTER COLUMN {} TYPE {};
@@ -247,7 +248,7 @@ namespace STNL {
             // Check 3: Default Value
             
             std::string desiredDefaultValue = std::string(desiredCol.defaultValue);
-            if (desiredCol.type == ColumnType::UUID &&
+            if (desiredCol.type == SQLDataType::UUID &&
                 desiredCol.identity &&
                 desiredCol.defaultValue.empty()) {
                   desiredDefaultValue = std::string("uuidv7()");

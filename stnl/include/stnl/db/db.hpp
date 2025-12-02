@@ -35,30 +35,6 @@ namespace STNL {
     std::string msg;
   };
 
-  enum PgFieldTypeOID {
-    boolean = 16,
-    character = 18,
-    int8 = 20,
-    int2 = 21,
-    int4 = 23,
-    text = 25,
-    json = 114,
-    xml = 142,
-    float4 = 700,
-    float8 = 701,
-    money = 790,
-    varchar = 1043,
-    date = 1082,
-    time = 1083,
-    timestamp = 1114,
-    timestamptz = 1184,
-    timetz = 1266,
-    bit = 1560,
-    numeric = 1700,
-    uuid = 2950,
-    jsonb = 3802
-  };
-
   class SelectedFieldIndex {
     public:
       SelectedFieldIndex() = default;

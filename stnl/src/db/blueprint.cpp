@@ -11,7 +11,7 @@
 
 namespace STNL {
 
-  Blueprint::Blueprint(const std::string tableName) : tableName_(std::move(tableName)) {}
+  Blueprint::Blueprint(std::string const tableName) : tableName_(tableName) {}
   
   std::string const& Blueprint::GetTableName() const { return tableName_; }
   std::unordered_map<std::string, Column> const& Blueprint::GetColumns() const { return columns_; }
@@ -20,7 +20,7 @@ namespace STNL {
     std::string name = Utils::StringToLower(realName);
     auto it = columns_.find(name);
     if (it == columns_.end()) {
-      auto [newIt, inserted] = columns_.emplace(name, Column{this->tableName_, std::move(realName), ColumnType::Undefined});
+      auto [newIt, inserted] = columns_.emplace(name, Column{this->tableName_, std::move(realName), SQLDataType::Undefined});
       if (inserted) { columnNames_.emplace_back(name); }
       return newIt->second;
     }
