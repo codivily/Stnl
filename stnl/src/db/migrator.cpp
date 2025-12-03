@@ -4,6 +4,7 @@
 #include "stnl/db/types.hpp"
 #include "stnl/db/migrator.hpp"
 #include "stnl/db/column.hpp"
+#include "stnl/db/sp_blueprint.hpp"
 #include "stnl/db/blueprint.hpp"
 #include "stnl/db/migration.hpp"
 #include "stnl/core/utils.hpp"
@@ -16,7 +17,8 @@
 #include <sstream> // For std::stringstream
 #include <format>  // Assuming C++20 std::format is available
 #include <stdexcept>
-#include <map>
+#include <unordered_map>
+#include <vector>
 
 #include <pqxx/pqxx>
 
@@ -33,6 +35,7 @@ namespace STNL {
     }
 
     void Migrator::Migrate(DB& db, Migration const& migration) {
+        // Table migration
         std::vector<std::string> const& tableNames = migration.GetTableNames();
         std::unordered_map<std::string, Blueprint> const& blueprints = migration.GetBlueprints();
         for (std::string const& key : tableNames) {
@@ -42,6 +45,18 @@ namespace STNL {
             }
             catch(std::exception const& e) {
                 Logger::Err() << "Migrator::Migrate: Error: " + std::string(e.what());
+            }
+        }
+
+        // Stored Procedure migration
+        std::vector<std::string> const& spNames = migration.GetProcedureNames();
+        std::unordered_map<std::string, SpBlueprint> const& spBlueprints = migration.GetProcedureBlueprints();
+        for (std::string const& key : spNames) {
+            SpBlueprint const& spBp = spBlueprints.at(key);
+            try {
+                ApplyProcedureBlueprint(db, spBp);
+            } catch(std::exception const& e) {
+                Logger::Err() << "Migrationor::Migrate: Error: " + std::string(e.what());
             }
         }
     }
@@ -317,5 +332,7 @@ namespace STNL {
 
     }
 
- 
+    void Migrator::ApplyProcedureBlueprint(DB& db, SpBlueprint const& spBp) {
+        Logger::Dbg() << "ApplyProcedureBlueprint";
+    } 
 }

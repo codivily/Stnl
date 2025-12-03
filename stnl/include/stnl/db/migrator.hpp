@@ -3,6 +3,7 @@
 #define STNL_MIGRATOR_HPP
 
 #include "stnl/db/column.hpp"
+#include "stnl/db/sp_blueprint.hpp"
 #include "stnl/db/blueprint.hpp"
 #include "stnl/db/migration.hpp"
 
@@ -23,6 +24,7 @@ namespace STNL {
       void Migrate(DB& db);
     private:
       void ApplyBlueprint(DB& db, Blueprint const& bp);
+      void ApplyProcedureBlueprint(DB& db, SpBlueprint const& bp);
       std::string GenerateSQLType(Column const& col);
       std::string GenerateCreateSQL(Blueprint const& bp);
       std::string GenerateSQLConstraints(Column const& col);
