@@ -18,6 +18,7 @@ namespace STNL {
     unsigned short precision;
     unsigned short scale;
     std::string defaultValue;
+    explicit SpParam(std::string paramName, SQLDataType const& paramType);
   };
 
 

@@ -3,11 +3,9 @@
 #include "stnl/db/sp_param.hpp"
 #include "stnl/core/utils.hpp"
 
-
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <string>
-
 
 namespace STNL {
 
@@ -16,11 +14,11 @@ namespace STNL {
   std::string const& SpBlueprint::GetName() const { return spName_; }
   std::unordered_map<std::string, SpParam> const& SpBlueprint::GetParams() const { return spParams_; }
 
-  SpParam& SpBlueprint::GetOrAddSpParam(std::string paramName) {
+  SpParam& SpBlueprint::GetOrAddParam(std::string paramName) {
     std::string name = Utils::StringToLower(paramName);
     auto it = spParams_.find(name);
     if (it == spParams_.end()) {
-      auto [newIt, inserted] = spParams_.emplace(name, SpParam{std::move(paramName), SQLDataType::Undefined});
+      auto [newIt, inserted] = spParams_.emplace(name, SpParam(paramName, SQLDataType::Undefined));
       if (inserted) { spParamNames_.emplace_back(name); }
       return newIt->second;
     }
@@ -35,75 +33,63 @@ namespace STNL {
     return spParamNames_;
   }
 
-  std::unordered_map<std::string, SpParam> const& SpBlueprint::GetParams() const {
-    return spParams_;
-  }
-
-  void SpBlueprint::AddSpParam(SpParam&& param) {
-    spParams_.emplace(param.name, std::move(param));
-  }
-
-  void SpBlueprint::AddSpParam(SpParam&& param) {
-    spParams_.emplace(param.name, std::move(param));
-  }
-
   BigIntParamProxy SpBlueprint::BigInt(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return BigIntParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return BigIntParamProxy{param};
   }
 
   IntegerParamProxy SpBlueprint::Integer(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return IntegerParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return IntegerParamProxy{param};
   }
 
   SmallIntParamProxy SpBlueprint::SmallInt(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return SmallIntParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return SmallIntParamProxy{param};
   }
 
   NumericParamProxy SpBlueprint::Numeric(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return NumericParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return NumericParamProxy{param};
   }
 
   BitParamProxy SpBlueprint::Bit(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return BitParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return BitParamProxy{param};
   }
 
   CharParamProxy SpBlueprint::Char(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return CharParamProxy{col};
+    SpParam& param = GetOrAddParam(name);
+    return CharParamProxy{param};
   }
 
   VarcharParamProxy SpBlueprint::Varchar(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return VarcharParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return VarcharParamProxy{param};
   }
 
   BooleanParamProxy SpBlueprint::Boolean(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return BooleanParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return BooleanParamProxy{param};
   }
 
   DateParamProxy SpBlueprint::Date(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return DateParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return DateParamProxy{param};
   }
 
   TimestampParamProxy SpBlueprint::Timestamp(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return TimestampParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return TimestampParamProxy{param};
   }
 
   UUIDParamProxy SpBlueprint::UUID(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return UUIDParamProxy{col};
+    SpParam& param = GetOrAddParam(std::move(name));
+    return UUIDParamProxy{param};
   }
 
   TextParamProxy SpBlueprint::Text(std::string name) {
-    SpParam& col = GetOrAddSpParam(std::move(name));
-    return TextParamProxy(col);
+    SpParam& param = GetOrAddParam(std::move(name));
+    return TextParamProxy(param);
   }
 }

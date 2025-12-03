@@ -5,8 +5,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
-
+#include <unordered_map>
 
 namespace STNL {
   class SpBlueprint {
@@ -32,12 +31,11 @@ namespace STNL {
       UUIDParamProxy UUID(std::string name);
       TextParamProxy Text(std::string name);
 
-      void AddSpParam(SpParam&& param);
     private:
       std::string spName_;
       std::unordered_map<std::string, SpParam> spParams_;
       std::vector<std::string> spParamNames_;
-      SpParam& GetOrAddSpParam(std::string paraName);
+      SpParam& GetOrAddParam(std::string paraName);
 
       std::string spBody_;
   };
