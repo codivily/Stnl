@@ -28,29 +28,6 @@ namespace json = boost::json;
 
 namespace STNL {
 
-  std::string SelectedFieldIndex::Field(std::string const& fieldName) {
-    fieldToIndex_[std::string{fieldName}] = fieldToIndex_.size();
-    return std::string{fieldName};
-  }
-
-  std::string SelectedFieldIndex::operator()(std::string const& fieldName) {
-    return this->Field(fieldName);
-  }
-
-  unsigned int SelectedFieldIndex::Index(std::string const& fieldName) const {
-    auto it = fieldToIndex_.find(fieldName);
-    if (it == fieldToIndex_.end()) {
-      std::string errMsg =  std::format("SelectedFieldIndex::Index: field with name '{}' not found", fieldName);
-      Logger::Err() << errMsg;
-      throw std::runtime_error(errMsg);
-    }
-    return it->second;
-  }
-
-  const std::unordered_map<std::string, unsigned int>& SelectedFieldIndex::GetMap() const {
-    return fieldToIndex_;
-  }
-
   DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
     /* there has to be at least one mandatory thread */
     if (numThreads == 0) { numThreads = 1; }
@@ -223,19 +200,18 @@ namespace STNL {
   std::vector<Column> DB::GetTableColumns(std::string_view tableName) {
 
       std::vector<std::string> indexNameLst = this->GetTableIndexNames(tableName);
-      SelectedFieldIndex sfi;
-      
+  
       std::vector<std::string> select;
       select.reserve(10);
-      select.emplace_back(sfi("table_name"));
-      select.emplace_back(sfi("column_name"));
-      select.emplace_back(sfi("data_type"));
-      select.emplace_back(sfi("character_maximum_length"));
-      select.emplace_back(sfi("numeric_precision"));
-      select.emplace_back(sfi("numeric_scale"));
-      select.emplace_back(sfi("is_nullable"));
-      select.emplace_back(sfi("column_default"));
-      select.emplace_back(sfi("identity_generation"));
+      select.emplace_back("table_name");
+      select.emplace_back("column_name");
+      select.emplace_back("data_type");
+      select.emplace_back("character_maximum_length");
+      select.emplace_back("numeric_precision");
+      select.emplace_back("numeric_scale");
+      select.emplace_back("is_nullable");
+      select.emplace_back("column_default");
+      select.emplace_back("identity_generation");
 
       std::vector<std::string> where;
       where.reserve(4);
@@ -252,10 +228,10 @@ namespace STNL {
 
       // Iterate over results and map to Column structures
       for (const auto& row : r.data) {
-          std::string table = row[sfi.Index("table_name")].as<std::string>();
-          std::string colName = row[sfi.Index("column_name")].as<std::string>();
-          std::string dataType = row[sfi.Index("data_type")].as<std::string>();
-          std::string isNullable = row[sfi.Index("is_nullable")].as<std::string>();
+          std::string table = row["table_name"].as<std::string>();
+          std::string colName = row["column_name"].as<std::string>();
+          std::string dataType = row["data_type"].as<std::string>();
+          std::string isNullable = row["is_nullable"].as<std::string>();
           
           Column col(table, colName, SQLDataType::Undefined); 
 
@@ -276,26 +252,26 @@ namespace STNL {
           else if (dataType == "smallint") {  col.type = SQLDataType::SmallInt;  }
           else if (dataType == "numeric") {
               col.type = SQLDataType::Numeric;
-              col.precision = row[sfi.Index("numeric_precision")].as<unsigned short>(0); 
-              col.scale = row[sfi.Index("numeric_scale")].as<unsigned short>(0);     
+              col.precision = row["numeric_precision"].as<unsigned short>(0); 
+              col.scale = row["numeric_scale"].as<unsigned short>(0);     
           }
           else if (dataType == "bit") {
               col.type = SQLDataType::Bit;
-              col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(1);
+              col.length = row["character_maximum_length"].as<std::size_t>(1);
           }
           else if (dataType == "character") {
               col.type = SQLDataType::Char;
-              col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(0);
+              col.length = row["character_maximum_length"].as<std::size_t>(0);
           }
           else if (dataType == "character varying") {
               col.type = SQLDataType::Varchar;
-              col.length = row[sfi.Index("character_maximum_length")].as<std::size_t>(255);
+              col.length = row["character_maximum_length"].as<std::size_t>(255);
           }
           else if (dataType == "boolean") { col.type = SQLDataType::Boolean; }
           else if (dataType == "date") { col.type = SQLDataType::Date; }
           else if (dataType.find("timestamp") != std::string::npos) { 
               col.type = SQLDataType::Timestamp;
-              col.length = row[sfi.Index("numeric_precision")].as<std::size_t>(6);
+              col.length = row["numeric_precision"].as<std::size_t>(6);
           }
           else if (dataType == "uuid") { col.type = SQLDataType::UUID; }
           else if (dataType == "text") { col.type = SQLDataType::Text; }
@@ -305,13 +281,13 @@ namespace STNL {
           }
 
           // C. Handle IDENTITY 
-          if (row[sfi.Index("identity_generation")].c_str() && row[sfi.Index("identity_generation")].c_str()[0] != '\0') {
+          if (row["identity_generation"].c_str() && row["identity_generation"].c_str()[0] != '\0') {
               col.identity = true;
           }
           
           // D. Handle Default Value
-          if (row[sfi.Index("column_default")].c_str() && row[sfi.Index("column_default")].c_str()[0] != '\0') {
-            std::string s = row[sfi.Index("column_default")].as<std::string>();
+          if (row["column_default"].c_str() && row["column_default"].c_str()[0] != '\0') {
+            std::string s = row["column_default"].as<std::string>();
             col.defaultValue = s.substr(0, s.find_last_of(':') - 1); // get the default value without the ::type name portion
           }
           columns.push_back(std::move(col));

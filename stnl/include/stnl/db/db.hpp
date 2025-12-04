@@ -35,17 +35,6 @@ namespace STNL {
     std::string msg;
   };
 
-  class SelectedFieldIndex {
-    public:
-      SelectedFieldIndex() = default;
-      std::string Field(std::string const& fieldName);
-      unsigned int Index(std::string const& fieldName) const;
-      const std::unordered_map<std::string, unsigned int>& GetMap() const;
-      std::string operator()(std::string const& fieldName);
-    private:
-      std::unordered_map<std::string, unsigned int> fieldToIndex_;
-  };
-
   class DB {
     
     public:
