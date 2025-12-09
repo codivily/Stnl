@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
     });
 
     pDB->GetMigration().Procedure("sp_test", [](SpBlueprint &bp) {
-        bp.Body() = "SELECT * FROM asset ORDER BY uuid desc";
+        bp.Body() = "PERFORM * FROM product ORDER BY uuid desc LIMIT 10";
     });
 
     server.AddModule<App>();
