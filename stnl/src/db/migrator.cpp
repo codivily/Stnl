@@ -67,6 +67,9 @@ namespace STNL {
 
     std::string Migrator::GenerateSQLType(Column const& col) {
         // Note: IDENTITY is handled here as it is part of the type declaration in PostgreSQL
+        if (col.type == SQLDataType::Undefined) {
+            throw std::invalid_argument("Undefined parameter type");
+        }
         switch (col.type) {
             case SQLDataType::BigInt: 
                 return col.identity ? "BIGINT GENERATED ALWAYS AS IDENTITY" : "BIGINT";
@@ -88,10 +91,66 @@ namespace STNL {
                 return std::format("TIMESTAMP({}) WITH TIME ZONE", col.precision); 
             case SQLDataType::UUID: return "UUID";
             case SQLDataType::Bit: return std::format("BIT({})", col.length);
-            case SQLDataType::Undefined: 
-            default: 
-                return "NULL";
+            default:
+                throw std::invalid_argument("Unsupported column type");
         }
+    }
+
+    std::string Migrator::GenerateSpParamSQL(SpParam const &spParam) {
+        if (spParam.type == SQLDataType::Undefined) {
+            throw std::invalid_argument("Undefined parameter type");
+        }
+        std::stringstream ss;
+        if (spParam.in && spParam.out) { ss << "INOUT"; }
+        else if (spParam.out) { ss << "OUT"; }
+        else { ss << "IN"; }
+        ss << ' ' << spParam.name << ' ';
+
+        switch (spParam.type) {
+            case SQLDataType::BigInt:
+                ss << "BIGINT";
+                break;
+            case SQLDataType::Integer:
+                ss << "INTEGER";
+                break;
+            case SQLDataType::SmallInt:
+                ss << "SMALLINT";
+                break;
+            case SQLDataType::Numeric:
+                ss << std::format("NUMERIC({}, {})", spParam.precision, spParam.scale);
+                break;
+            case SQLDataType::Varchar:
+                ss << std::format("VARCHAR({})", spParam.length);
+                break;
+            case SQLDataType::Char:
+                ss << std::format("CHAR({})", spParam.length);
+                break;
+            case SQLDataType::Text:
+                ss << "TEXT";
+                break;
+            case SQLDataType::Boolean:
+                ss << "BOOLEAN";
+                break;
+            case SQLDataType::Date:
+                ss << "DATE";
+                break;
+            case SQLDataType::Timestamp:
+                ss << std::format("TIMESTAMP({}) WITH TIME ZONE", spParam.precision);
+                break;
+            case SQLDataType::UUID:
+                ss << "UUID";
+                break;
+            case SQLDataType::Bit:
+                ss << std::format("BIT({})", spParam.length);
+                break;
+            default:
+                throw std::invalid_argument("Unsupported parameter type");
+        }
+
+        if (!spParam.defaultValue.empty()) {
+            ss << " DEFAULT " << spParam.defaultValue;
+        }
+        return ss.str();
     }
 
     std::string Migrator::GenerateSQLConstraints(const Column& col) {
@@ -333,6 +392,32 @@ namespace STNL {
     }
 
     void Migrator::ApplyProcedureBlueprint(DB& db, SpBlueprint const& spBp) {
-        Logger::Dbg() << "ApplyProcedureBlueprint";
+
+        std::stringstream ss;
+        ss << std::format("CREATE OR REPLACE PROCEDURE {}", spBp.GetName());
+        std::unordered_map<std::string, SpParam> const& params = spBp.GetParams();
+        ss << '(';
+        if (params.size() > 0) {
+            size_t i = 0;
+            for(std::string const &paramName : spBp.GetParamNames()) {
+                SpParam const& spParam = params.at(paramName);
+                if (i++ > 0) { ss << ", "; }
+                ss << this->GenerateSpParamSQL(spParam);
+            }
+        }
+        ss << ")\n";
+        ss << "LANGUAGE plpgsql\n";
+        ss << "AS $$\n";
+        ss << "BEGIN\n";
+        ss << std::string(spBp.GetBody());
+        ss << ";\nEND;\n";
+        ss << "$$;\n";
+        std::string qSQL = Utils::FixIndent(ss.str());
+        QResult r = db.Exec(qSQL);
+        if (!r.ok) {
+            Logger::Err() << std::format("Migrator: Failed CREATE OR REPLACE PROCEDURE. SQL: {} Error: {}", qSQL, r.msg);
+            throw std::runtime_error("Migration failed (CREATE OR REPLACE PROCEDURE) due to SQL error. Procedure name: " + std::string(spBp.GetName()));
+        }
+        Logger::Inf() << std::format("Migrator: PROCEDURE CREATED/REPLACED: {}", spBp.GetName());
     } 
 }

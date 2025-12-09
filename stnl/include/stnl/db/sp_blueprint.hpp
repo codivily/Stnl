@@ -17,6 +17,7 @@ namespace STNL {
       std::vector<std::string> const& GetParamNames() const;
 
       std::string& Body();
+      std::string const& GetBody() const;
 
       BigIntParamProxy BigInt(std::string name);
       IntegerParamProxy Integer(std::string name);

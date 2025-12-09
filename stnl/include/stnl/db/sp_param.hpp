@@ -14,7 +14,8 @@ namespace STNL {
     SQLDataType type;
     size_t length;
     bool nullable;
-    bool output;
+    bool out;
+    bool in;
     unsigned short precision;
     unsigned short scale;
     std::string defaultValue;
@@ -44,8 +45,19 @@ namespace STNL {
         return static_cast<Derived&>(*this);
       }
 
-      Derived& Output(bool v = true) {
-        param.output = v;
+      Derived& Out(bool v = true) {
+        param.out = v;
+        return static_cast<Derived&>(*this);
+      }
+
+      Derived& In(bool v = true) {
+        param.in = v;
+        return static_cast<Derived&>(*this);
+      }
+
+      Derived& InOut() {
+        param.in = true;
+        param.out = true;
         return static_cast<Derived&>(*this);
       }
 

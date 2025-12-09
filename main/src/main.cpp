@@ -8,6 +8,7 @@
 #include "stnl/core/config.hpp"
 #include "stnl/db/db.hpp"
 #include "stnl/db/blueprint.hpp"
+#include "stnl/db/sp_blueprint.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -27,6 +28,7 @@ using Request = STNL::Request;
 using Middleware = STNL::Middleware;
 using DB = STNL::DB;
 using Blueprint = STNL::Blueprint;
+using SpBlueprint = STNL::SpBlueprint;
 
  class BasicMiddleware : public Middleware {
   public:
@@ -88,6 +90,10 @@ int main(int argc, char* argv[]) {
         bp.UUID("uuid").NotNull().Default().Unique();
         bp.Varchar("name").NotNull();
         bp.Bit("active").N(1).NotNull().Default();
+    });
+
+    pDB->GetMigration().Procedure("sp_test", [](SpBlueprint &bp) {
+        bp.Body() = "SELECT * FROM asset ORDER BY uuid desc";
     });
 
     server.AddModule<App>();

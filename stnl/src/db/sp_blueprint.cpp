@@ -29,6 +29,10 @@ namespace STNL {
     return spBody_;
   }
 
+  std::string const& SpBlueprint::GetBody() const {
+    return spBody_;
+  }
+
   std::vector<std::string> const& SpBlueprint::GetParamNames() const {
     return spParamNames_;
   }

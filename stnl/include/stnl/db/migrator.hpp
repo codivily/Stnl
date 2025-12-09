@@ -28,6 +28,9 @@ namespace STNL {
       std::string GenerateSQLType(Column const& col);
       std::string GenerateCreateSQL(Blueprint const& bp);
       std::string GenerateSQLConstraints(Column const& col);
+      
+      // Stored procedure creation utilities
+      std::string GenerateSpParamSQL(SpParam const &spParam);
   };
 }
 
