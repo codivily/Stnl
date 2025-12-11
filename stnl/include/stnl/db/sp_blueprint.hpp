@@ -18,6 +18,8 @@ namespace STNL {
 
       std::string& Body();
       std::string const& GetBody() const;
+      std::string& BodyDelimiter();
+      std::string const& GetBodyDelimiter() const;
 
       BigIntParamProxy BigInt(std::string name);
       IntegerParamProxy Integer(std::string name);
@@ -39,6 +41,7 @@ namespace STNL {
       SpParam& GetOrAddParam(std::string paraName);
 
       std::string spBody_;
+      std::string spBodyDelimiter_ = "$$";
   };
 }
 

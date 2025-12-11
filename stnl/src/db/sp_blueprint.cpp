@@ -33,6 +33,14 @@ namespace STNL {
     return spBody_;
   }
 
+  std::string& SpBlueprint::BodyDelimiter() {
+    return spBodyDelimiter_;
+  }
+  
+  std::string const& SpBlueprint::GetBodyDelimiter() const {
+    return spBodyDelimiter_;
+  }
+
   std::vector<std::string> const& SpBlueprint::GetParamNames() const {
     return spParamNames_;
   }

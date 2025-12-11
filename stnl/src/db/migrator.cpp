@@ -405,13 +405,12 @@ namespace STNL {
                 ss << this->GenerateSpParamSQL(spParam);
             }
         }
+        std::string bodyDelimiter{spBp.GetBodyDelimiter()};
         ss << ")\n";
         ss << "LANGUAGE plpgsql\n";
-        ss << "AS $$\n";
-        ss << "BEGIN\n";
+        ss << "AS " + bodyDelimiter + '\n';
         ss << std::string(spBp.GetBody());
-        ss << ";\nEND;\n";
-        ss << "$$;\n";
+        ss << bodyDelimiter + ";\n";
         std::string qSQL = Utils::FixIndent(ss.str());
         QResult r = db.Exec(qSQL);
         if (!r.ok) {

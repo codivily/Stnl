@@ -13,7 +13,9 @@ namespace STNL
       nullable(false),
       precision(0),
       scale(0),
-      defaultValue{} {}
+      defaultValue{},
+      in(false),
+      out(false) {}
 
   BigIntParamProxy::BigIntParamProxy(SpParam& param) : SpParamProxy(param) {
     param.type = SQLDataType::BigInt;
