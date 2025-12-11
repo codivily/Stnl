@@ -9,7 +9,7 @@
 
 namespace STNL {
 
-  struct SpParam {
+  struct SrParam {
     std::string name;
     SQLDataType type;
     size_t length;
@@ -19,15 +19,15 @@ namespace STNL {
     unsigned short precision;
     unsigned short scale;
     std::string defaultValue;
-    explicit SpParam(std::string paramName, SQLDataType const& paramType);
+    explicit SrParam(std::string paramName, SQLDataType const& paramType);
   };
 
 
   template <typename Derived>
-  class SpParamProxy {
+  class SrParamProxy {
     protected:
-      SpParam& param;
-      explicit SpParamProxy(SpParam& p) : param(p) {}
+      SrParam& param;
+      explicit SrParamProxy(SrParam& p) : param(p) {}
 
     public:
       Derived& Name(std::string const& name) {
@@ -68,76 +68,76 @@ namespace STNL {
   };
 
 
-  class BigIntParamProxy : public SpParamProxy<BigIntParamProxy> {
+  class BigIntParamProxy : public SrParamProxy<BigIntParamProxy> {
     public:
-      BigIntParamProxy(SpParam& c);
+      BigIntParamProxy(SrParam& c);
       BigIntParamProxy& Identity(bool v = true);
   };
 
-  class IntegerParamProxy : public SpParamProxy<IntegerParamProxy> {
+  class IntegerParamProxy : public SrParamProxy<IntegerParamProxy> {
     public: 
-      IntegerParamProxy(SpParam& c);
+      IntegerParamProxy(SrParam& c);
       IntegerParamProxy& Identity(bool const &v = true);
   };
 
-  class SmallIntParamProxy : public SpParamProxy<SmallIntParamProxy> {
+  class SmallIntParamProxy : public SrParamProxy<SmallIntParamProxy> {
     public:
-      SmallIntParamProxy(SpParam& c);
+      SmallIntParamProxy(SrParam& c);
   };
 
-  class NumericParamProxy : public SpParamProxy<NumericParamProxy> {
+  class NumericParamProxy : public SrParamProxy<NumericParamProxy> {
     public:
-      NumericParamProxy(SpParam& c);
+      NumericParamProxy(SrParam& c);
       NumericParamProxy& Precision(unsigned short v);
       NumericParamProxy& Scale(unsigned short v);
   };
 
-  class BitParamProxy : public SpParamProxy<BitParamProxy> {
+  class BitParamProxy : public SrParamProxy<BitParamProxy> {
     public:
-      BitParamProxy(SpParam& c);
+      BitParamProxy(SrParam& c);
       BitParamProxy& N(unsigned short v);
       BitParamProxy& Default(std::string const& v = "'1'") override;
   };
 
-  class CharParamProxy : public SpParamProxy<CharParamProxy> {
+  class CharParamProxy : public SrParamProxy<CharParamProxy> {
     public:
-      CharParamProxy(SpParam& c);
+      CharParamProxy(SrParam& c);
       CharParamProxy& Length(std::size_t v);
   };
 
-  class VarcharParamProxy : public SpParamProxy<VarcharParamProxy> {
+  class VarcharParamProxy : public SrParamProxy<VarcharParamProxy> {
     public:
-      VarcharParamProxy(SpParam& c);
+      VarcharParamProxy(SrParam& c);
       VarcharParamProxy& Length(std::size_t v);
   };
 
-  class BooleanParamProxy : public SpParamProxy<BooleanParamProxy> {
+  class BooleanParamProxy : public SrParamProxy<BooleanParamProxy> {
     public:
-      BooleanParamProxy(SpParam& c);
+      BooleanParamProxy(SrParam& c);
       BooleanParamProxy& Default(std::string const& v = "true") override;
   };
 
-  class DateParamProxy : public SpParamProxy<DateParamProxy> {
+  class DateParamProxy : public SrParamProxy<DateParamProxy> {
     public:
-      DateParamProxy(SpParam& c);
+      DateParamProxy(SrParam& c);
       DateParamProxy& Default(std::string const& v = "CURRENT_DATE") override;
   };
 
-  class TimestampParamProxy : public SpParamProxy<TimestampParamProxy> {
+  class TimestampParamProxy : public SrParamProxy<TimestampParamProxy> {
     public:
-      TimestampParamProxy(SpParam& c);
+      TimestampParamProxy(SrParam& c);
       TimestampParamProxy& Default(std::string const& v = "CURRENT_TIMESTAMP") override;
   };
 
-  class UUIDParamProxy : public SpParamProxy<UUIDParamProxy> {
+  class UUIDParamProxy : public SrParamProxy<UUIDParamProxy> {
     public:
-      UUIDParamProxy(SpParam& c);
+      UUIDParamProxy(SrParam& c);
       UUIDParamProxy& Default(std::string const& v = "uuidv7()") override;
   };
 
-  class TextParamProxy : public SpParamProxy<TextParamProxy> {
+  class TextParamProxy : public SrParamProxy<TextParamProxy> {
     public:
-      TextParamProxy(SpParam& c);
+      TextParamProxy(SrParam& c);
   };
 }
 

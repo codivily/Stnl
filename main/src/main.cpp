@@ -8,7 +8,7 @@
 #include "stnl/core/config.hpp"
 #include "stnl/db/db.hpp"
 #include "stnl/db/blueprint.hpp"
-#include "stnl/db/sp_blueprint.hpp"
+#include "stnl/db/sr_blueprint.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
@@ -28,7 +28,7 @@ using Request = STNL::Request;
 using Middleware = STNL::Middleware;
 using DB = STNL::DB;
 using Blueprint = STNL::Blueprint;
-using SpBlueprint = STNL::SpBlueprint;
+using SrBlueprint = STNL::SrBlueprint;
 
  class BasicMiddleware : public Middleware {
   public:
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
         bp.Bit("active").N(1).NotNull().Default();
     });
 
-    pDB->GetMigration().Procedure("sp_test", [](SpBlueprint &bp) {
+    pDB->GetMigration().Procedure("sr_test", [](SrBlueprint &bp) {
         bp.Body() = "PERFORM * FROM product ORDER BY uuid desc LIMIT 10";
     });
 

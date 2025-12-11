@@ -13,8 +13,8 @@ set(STNL_SOURCES
   # DB
   src/db/db.cpp
   src/db/blueprint.cpp
-  src/db/sp_param.cpp
-  src/db/sp_blueprint.cpp
+  src/db/sr_param.cpp
+  src/db/sr_blueprint.cpp
   src/db/migration.cpp
   src/db/migrator.cpp
   src/db/column.cpp

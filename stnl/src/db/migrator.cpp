@@ -4,7 +4,7 @@
 #include "stnl/db/types.hpp"
 #include "stnl/db/migrator.hpp"
 #include "stnl/db/column.hpp"
-#include "stnl/db/sp_blueprint.hpp"
+#include "stnl/db/sr_blueprint.hpp"
 #include "stnl/db/blueprint.hpp"
 #include "stnl/db/migration.hpp"
 #include "stnl/core/utils.hpp"
@@ -50,11 +50,11 @@ namespace STNL {
 
         // Stored Procedure migration
         std::vector<std::string> const& spNames = migration.GetProcedureNames();
-        std::unordered_map<std::string, SpBlueprint> const& spBlueprints = migration.GetProcedureBlueprints();
+        std::unordered_map<std::string, SrBlueprint> const& spBlueprints = migration.GetProcedureBlueprints();
         for (std::string const& key : spNames) {
-            SpBlueprint const& spBp = spBlueprints.at(key);
+            SrBlueprint const& srBp = spBlueprints.at(key);
             try {
-                ApplyProcedureBlueprint(db, spBp);
+                ApplyProcedureBlueprint(db, srBp);
             } catch(std::exception const& e) {
                 Logger::Err() << "Migrationor::Migrate: Error: " + std::string(e.what());
             }
@@ -96,7 +96,7 @@ namespace STNL {
         }
     }
 
-    std::string Migrator::GenerateSpParamSQL(SpParam const &spParam) {
+    std::string Migrator::GenerateSrParamSQL(SrParam const &spParam) {
         if (spParam.type == SQLDataType::Undefined) {
             throw std::invalid_argument("Undefined parameter type");
         }
@@ -391,32 +391,32 @@ namespace STNL {
 
     }
 
-    void Migrator::ApplyProcedureBlueprint(DB& db, SpBlueprint const& spBp) {
+    void Migrator::ApplyProcedureBlueprint(DB& db, SrBlueprint const& srBp) {
 
         std::stringstream ss;
-        ss << std::format("CREATE OR REPLACE PROCEDURE {}", spBp.GetName());
-        std::unordered_map<std::string, SpParam> const& params = spBp.GetParams();
+        ss << std::format("CREATE OR REPLACE PROCEDURE {}", srBp.GetName());
+        std::unordered_map<std::string, SrParam> const& params = srBp.GetParams();
         ss << '(';
         if (params.size() > 0) {
             size_t i = 0;
-            for(std::string const &paramName : spBp.GetParamNames()) {
-                SpParam const& spParam = params.at(paramName);
+            for(std::string const &paramName : srBp.GetParamNames()) {
+                SrParam const& spParam = params.at(paramName);
                 if (i++ > 0) { ss << ", "; }
-                ss << this->GenerateSpParamSQL(spParam);
+                ss << this->GenerateSrParamSQL(spParam);
             }
         }
-        std::string bodyDelimiter{spBp.GetBodyDelimiter()};
+        std::string bodyDelimiter{srBp.GetBodyDelimiter()};
         ss << ")\n";
         ss << "LANGUAGE plpgsql\n";
         ss << "AS " + bodyDelimiter + '\n';
-        ss << std::string(spBp.GetBody());
+        ss << std::string(srBp.GetBody());
         ss << bodyDelimiter + ";\n";
         std::string qSQL = Utils::FixIndent(ss.str());
         QResult r = db.Exec(qSQL);
         if (!r.ok) {
             Logger::Err() << std::format("Migrator: Failed CREATE OR REPLACE PROCEDURE. SQL: {} Error: {}", qSQL, r.msg);
-            throw std::runtime_error("Migration failed (CREATE OR REPLACE PROCEDURE) due to SQL error. Procedure name: " + std::string(spBp.GetName()));
+            throw std::runtime_error("Migration failed (CREATE OR REPLACE PROCEDURE) due to SQL error. Procedure name: " + std::string(srBp.GetName()));
         }
-        Logger::Inf() << std::format("Migrator: PROCEDURE CREATED/REPLACED: {}", spBp.GetName());
+        Logger::Inf() << std::format("Migrator: PROCEDURE CREATED/REPLACED: {}", srBp.GetName());
     } 
 }

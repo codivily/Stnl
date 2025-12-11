@@ -1,6 +1,6 @@
 
 #include "stnl/db/migration.hpp"
-#include "stnl/db/sp_blueprint.hpp"
+#include "stnl/db/sr_blueprint.hpp"
 #include "stnl/db/blueprint.hpp"
 #include "stnl/core/utils.hpp"
 
@@ -31,7 +31,7 @@ namespace STNL {
 
 
   // STORED PROCEDURE BLUEPRINT
-  void Migration::Procedure(std::string const& spName, std::function<void(SpBlueprint&)> adaptFn) {
+  void Migration::Procedure(std::string const& spName, std::function<void(SrBlueprint&)> adaptFn) {
     std::string key = Utils::StringToLower(spName);
     auto [it, inserted] = spBlueprints_.emplace(key, spName);
     if (inserted) { spNames_.emplace_back(key); }
@@ -41,7 +41,7 @@ namespace STNL {
     return spNames_;
   }
 
-  std::unordered_map<std::string, SpBlueprint> const& Migration::GetProcedureBlueprints() const {
+  std::unordered_map<std::string, SrBlueprint> const& Migration::GetProcedureBlueprints() const {
     return spBlueprints_;
   }
 

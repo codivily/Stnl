@@ -1,19 +1,19 @@
 #ifndef STNL_SP_BLUEPRINT
 #define STNL_SP_BLUEPRINT
 
-#include "sp_param.hpp"
+#include "sr_param.hpp"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 
 namespace STNL {
-  class SpBlueprint {
+  class SrBlueprint {
     public:
-      explicit SpBlueprint(const std::string tableName);
-      virtual ~SpBlueprint() = default;
+      explicit SrBlueprint(const std::string tableName);
+      virtual ~SrBlueprint() = default;
       std::string const& GetName() const;
-      std::unordered_map<std::string, SpParam> const& GetParams() const;
+      std::unordered_map<std::string, SrParam> const& GetParams() const;
       std::vector<std::string> const& GetParamNames() const;
 
       std::string& Body();
@@ -36,9 +36,9 @@ namespace STNL {
 
     private:
       std::string spName_;
-      std::unordered_map<std::string, SpParam> spParams_;
+      std::unordered_map<std::string, SrParam> spParams_;
       std::vector<std::string> spParamNames_;
-      SpParam& GetOrAddParam(std::string paraName);
+      SrParam& GetOrAddParam(std::string paraName);
 
       std::string spBody_;
       std::string spBodyDelimiter_ = "$$";

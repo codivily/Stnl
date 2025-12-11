@@ -1,12 +1,12 @@
 
 #include "stnl/db/types.hpp"
-#include "stnl/db/sp_param.hpp"
+#include "stnl/db/sr_param.hpp"
 #include "stnl/core/utils.hpp"
 
 
 namespace STNL
 {
-  SpParam::SpParam(std::string paraName, SQLDataType const& paramType)
+  SrParam::SrParam(std::string paraName, SQLDataType const& paramType)
     : name(paraName),
       type(paramType),
       length(0),
@@ -17,19 +17,19 @@ namespace STNL
       in(false),
       out(false) {}
 
-  BigIntParamProxy::BigIntParamProxy(SpParam& param) : SpParamProxy(param) {
+  BigIntParamProxy::BigIntParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::BigInt;
   }
 
-  IntegerParamProxy::IntegerParamProxy(SpParam& param) : SpParamProxy(param) {
+  IntegerParamProxy::IntegerParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Integer;
   }
 
-  SmallIntParamProxy::SmallIntParamProxy(SpParam& param) : SpParamProxy(param) {
+  SmallIntParamProxy::SmallIntParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::SmallInt;
   }
 
-  NumericParamProxy::NumericParamProxy(SpParam& param) : SpParamProxy(param) {
+  NumericParamProxy::NumericParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Numeric;
     param.precision = 9;
     param.scale = 0;
@@ -45,7 +45,7 @@ namespace STNL
     return *this;
   }
 
-  BitParamProxy::BitParamProxy(SpParam& param) : SpParamProxy(param) {
+  BitParamProxy::BitParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Bit;
     param.length = 1;
   }
@@ -56,10 +56,10 @@ namespace STNL
   }
 
   BitParamProxy& BitParamProxy::Default(std::string const& v) {
-    return SpParamProxy<BitParamProxy>::Default(v);
+    return SrParamProxy<BitParamProxy>::Default(v);
   }
 
-  CharParamProxy::CharParamProxy(SpParam& param) : SpParamProxy(param) {
+  CharParamProxy::CharParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Char;
     param.length = 1;
   }
@@ -69,7 +69,7 @@ namespace STNL
     return *this;
   }
 
-  VarcharParamProxy::VarcharParamProxy(SpParam& param) : SpParamProxy(param) {
+  VarcharParamProxy::VarcharParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Varchar;
     param.length = 255;
   }
@@ -79,39 +79,39 @@ namespace STNL
     return *this;
   }
 
-  BooleanParamProxy::BooleanParamProxy(SpParam& param) : SpParamProxy(param) {
+  BooleanParamProxy::BooleanParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Boolean;
   }
 
   BooleanParamProxy& BooleanParamProxy::Default(std::string const& v) {
-    return SpParamProxy<BooleanParamProxy>::Default(v);
+    return SrParamProxy<BooleanParamProxy>::Default(v);
   }
 
-  DateParamProxy::DateParamProxy(SpParam &c) : SpParamProxy(param) {
+  DateParamProxy::DateParamProxy(SrParam &c) : SrParamProxy(param) {
     param.type = SQLDataType::Date;
   }
 
   DateParamProxy& DateParamProxy::Default(std::string const& v) {
-    return SpParamProxy<DateParamProxy>::Default(v);
+    return SrParamProxy<DateParamProxy>::Default(v);
   }
 
-  TimestampParamProxy::TimestampParamProxy(SpParam& param) : SpParamProxy(param) {
+  TimestampParamProxy::TimestampParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Timestamp;
   }
 
   TimestampParamProxy& TimestampParamProxy::Default(std::string const& v) {
-    return SpParamProxy<TimestampParamProxy>::Default(v);
+    return SrParamProxy<TimestampParamProxy>::Default(v);
   }
 
-  UUIDParamProxy::UUIDParamProxy(SpParam& param) : SpParamProxy(param) {
+  UUIDParamProxy::UUIDParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::UUID;
   }
 
   UUIDParamProxy& UUIDParamProxy::Default(std::string const& v) {
-    return SpParamProxy<UUIDParamProxy>::Default(v);
+    return SrParamProxy<UUIDParamProxy>::Default(v);
   }
 
-  TextParamProxy::TextParamProxy(SpParam& param) : SpParamProxy(param) {
+  TextParamProxy::TextParamProxy(SrParam& param) : SrParamProxy(param) {
     param.type = SQLDataType::Text;
   }
   
