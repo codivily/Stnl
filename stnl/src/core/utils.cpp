@@ -56,6 +56,10 @@ namespace STNL
     return tmp;
   }
 
+  bool Utils::StringCaseCmp(std::string_view a, std::string_view b) {
+     return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), b.end(), [](char c1, char  c2) { return std::tolower(c1) == std::tolower(c2); });
+  }
+
   std::string Utils::Join(std::vector<std::string> const& parts, std::string const& separator) {
     std::stringstream ss;
     bool bFirst = true;

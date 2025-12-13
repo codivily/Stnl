@@ -16,6 +16,7 @@ namespace STNL {
       static std::string TrimLeft(const std::string_view s);
       static std::string TrimRight(const std::string_view s);
       static std::string Trim(const std::string_view s);
+      static bool StringCaseCmp(const std::string_view a, std::string_view b);
       static std::string FixIndent(const std::string_view s);
       static std::string Join(std::vector<std::string>const& parts, std::string const& separator = ";");
       

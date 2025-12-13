@@ -238,8 +238,8 @@ namespace STNL {
           std::string standardIndexName = Utils::StringToLower(std::format("{}_{}_idx", table, colName));
           std::string uniqueIndexName = Utils::StringToLower(std::format("{}_{}_key", table, colName));
           for (std::string& indexName: indexNameLst) {
-            if (!strcmpi(indexName.c_str(), standardIndexName.c_str())) { col.index = true; }
-            else if (!strcmpi(indexName.c_str(), uniqueIndexName.c_str())) { col.unique = true; }
+            if (!Utils::StringCaseCmp(indexName, standardIndexName)) { col.index = true; }
+            else if (!Utils::StringCaseCmp(indexName, uniqueIndexName)) { col.unique = true; }
             if (col.index && col.unique) { break; }
           }
           

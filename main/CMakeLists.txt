@@ -14,9 +14,9 @@ target_link_libraries(app
   PUBLIC
     Boost::headers
   PRIVATE
+    stnl
     Boost::filesystem
     Boost::json
     Boost::url
     libpqxx::pqxx
-    stnl
 )
