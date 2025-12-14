@@ -23,13 +23,15 @@
       }
     },
     {
-      "name": "windows-cross",
+      "name": "windows",
       "displayName": "Windows Cross-Compilation",
       "binaryDir": "${sourceDir}/build/windows",
+      "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchain-Windows-x86_64.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
+        "VCPKG_APPLOCAL_DEPS": "OFF",
         "CMAKE_CXX_STANDARD": "20",
         "CMAKE_CXX_STANDARD_REQUIRED": "ON",
         "CMAKE_CXX_EXTENSIONS": "OFF"

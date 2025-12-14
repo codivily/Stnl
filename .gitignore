@@ -57,3 +57,4 @@ build/
 .vs/
 .idea/
 .PVS-Studio/
+vcpkg/

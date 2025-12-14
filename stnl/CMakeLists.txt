@@ -46,6 +46,9 @@ target_link_libraries(stnl
     PRIVATE
         Boost::json
         Boost::url
+        Boost::filesystem
+        Boost::system
+        Boost::uuid
         libpqxx::pqxx
 )
 

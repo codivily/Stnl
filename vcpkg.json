@@ -6,6 +6,9 @@
     "boost-json",
     "boost-url",
     "boost-filesystem",
+    "boost-asio",
+    "boost-beast",
+    "boost-uuid",
     "libpqxx"
   ]
 }

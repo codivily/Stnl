@@ -47,12 +47,19 @@ if(CLANG_FORMAT_EXE)
 		COMMENT "Check formatting (clang-format --dry-run)")
 endif()
 # Find required packages
-find_package(Boost COMPONENTS headers filesystem json url)
+find_package(Boost COMPONENTS headers filesystem json url uuid)
 
 # Find vcpkg packages
 find_package(libpqxx CONFIG REQUIRED)
 find_package(PostgreSQL REQUIRED)  # If not auto-pulled by vcpkg
 
+# If a toolchain file is configured (e.g. via the `windows` preset using
+# VCPKG_ROOT), ensure it exists and provide a helpful error if not.
+if(DEFINED CMAKE_TOOLCHAIN_FILE AND NOT EXISTS "${CMAKE_TOOLCHAIN_FILE}")
+	message(FATAL_ERROR "CMAKE_TOOLCHAIN_FILE is set to '${CMAKE_TOOLCHAIN_FILE}' but file does not exist.\n"
+											"To cross-compile for Windows, install vcpkg and set the environment variable 'VCPKG_ROOT' to your vcpkg installation,\n"
+											"or set CMAKE_TOOLCHAIN_FILE to point to the vcpkg.cmake file. Example: export VCPKG_ROOT=/path/to/vcpkg")
+endif()
 # Add subdirectories
 add_subdirectory(stnl)
 add_subdirectory(main)
