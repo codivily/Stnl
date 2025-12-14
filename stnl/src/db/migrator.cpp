@@ -410,7 +410,7 @@ namespace STNL {
         ss << "LANGUAGE plpgsql\n";
         ss << "AS " + bodyDelimiter + '\n';
         ss << std::string(srBp.GetBody());
-        ss << bodyDelimiter + ";\n";
+        ss << '\n' + bodyDelimiter + ";\n";
         std::string qSQL = Utils::FixIndent(ss.str());
         QResult r = db.Exec(qSQL);
         if (!r.ok) {

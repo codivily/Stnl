@@ -30,7 +30,7 @@ using BatchInserter = STNL::BatchInserter;
 int main(int argc, char argv[]) {
   std::string dbName = "stnl_db";
   std::string dbUser = "postgres";
-  std::string dbPassword = "!stnl1301";
+  std::string dbPassword = "postgres";
   std::string dbHost = "localhost";
   size_t dbPort = 5432;
   std::string dbSchema = "public";

@@ -63,15 +63,12 @@ int main(int argc, char* argv[]) {
     }
 
     // Setup the database connection
-    auto dbName = Config::Value<std::string>("database.name", std::string("stnl_db"));
+    auto dbName = Config::Value<std::string>("database.name", std::string("postgres"));
     auto dbUser = Config::Value<std::string>("database.user", std::string("postgres"));
-    auto dbPassword = Config::Value<std::string>("database.password", std::string("!stnl1301"));
+    auto dbPassword = Config::Value<std::string>("database.password", std::string("postgres"));
     auto dbHost = Config::Value<std::string>("database.host", std::string("localhost"));
     auto dbPort = Config::Value<int>("database.port", 5432);
     auto dbSchema = Config::Value<std::string>("database.schema", std::string("public"));
-
-    std::string connStr = DB::GetConnectionString(*dbName, *dbUser, *dbPassword, *dbHost, *dbPort, *dbSchema);
-
     boost::optional<std::string> serverHost = Config::Value<std::string>("server.host", boost::optional<std::string>(std::string("127.0.0.1")));
     boost::optional<int> serverPort = Config::Value<int>("server.port", boost::optional<int>(8080));
     if (serverHost) { endpoint.address(asio::ip::make_address(serverHost.value())); }
@@ -81,7 +78,7 @@ int main(int argc, char* argv[]) {
     Server server{ioc, endpoint, rootDirPath};
     
     server.Use<BasicMiddleware>();
-    server.AddDatabase("default", connStr);
+    server.AddDatabase("default", DB::GetConnectionString(*dbName, *dbUser, *dbPassword, *dbHost, *dbPort, *dbSchema));
 
     // add migration to the database that will later run when the server starts
     auto pDB = server.GetDatabase();
@@ -93,7 +90,11 @@ int main(int argc, char* argv[]) {
     });
 
     pDB->GetMigration().Procedure("sr_test", [](SrBlueprint &bp) {
-        bp.Body() = "PERFORM * FROM product ORDER BY uuid desc LIMIT 10";
+        bp.Body() = R"(
+            BEGIN
+                SELECT * FROM product ORDER BY uuid desc LIMIT 10;
+            END;
+        )";
     });
 
     server.AddModule<App>();

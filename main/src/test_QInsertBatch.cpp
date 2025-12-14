@@ -30,7 +30,7 @@ using BatchInserter = STNL::BatchInserter;
 int main(int argc, char argv[]) {
   std::string dbName = "stnl_db";
   std::string dbUser = "postgres";
-  std::string dbPassword = "!stnl1301";
+  std::string dbPassword = "postgres";
   std::string dbHost = "localhost";
   size_t dbPort = 5432;
   std::string dbSchema = "public";
@@ -40,7 +40,7 @@ int main(int argc, char argv[]) {
   Logger::Init(ioc);
   DB db(connStr, ioc, 24, 24);
   // STNL::ConnectionPool pool{connStr, 4};
-  // auto pCon = std::make_shared<pqxx::connection>("dbname=stnl_db user=postgres password=!stnl1301 host=localhost port=5432 options=-csearch_path=stnl_sch,public");
+  // auto pCon = std::make_shared<pqxx::connection>("dbname=stnl_db user=postgres password=postgres host=localhost port=5432 options=-csearch_path=stnl_sch,public");
   // Migrator migrator;
   // migrator.Table("Product", [](Blueprint& bp) {
   //   bp.BigInt("id").Identity();

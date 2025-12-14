@@ -235,11 +235,11 @@ namespace STNL {
           
           Column col(table, colName, SQLDataType::Undefined); 
 
-          std::string standardIndexName = Utils::StringToLower(std::format("{}_{}_idx", table, colName));
-          std::string uniqueIndexName = Utils::StringToLower(std::format("{}_{}_key", table, colName));
+          std::string standardIndexName = std::format("{}_{}_idx", table, colName);
+          std::string uniqueIndexName = std::format("{}_{}_key", table, colName);
           for (std::string& indexName: indexNameLst) {
-            if (!Utils::StringCaseCmp(indexName, standardIndexName)) { col.index = true; }
-            else if (!Utils::StringCaseCmp(indexName, uniqueIndexName)) { col.unique = true; }
+            if (Utils::StringCaseCmp(indexName, standardIndexName)) { col.index = true; }
+            else if (Utils::StringCaseCmp(indexName, uniqueIndexName)) { col.unique = true; }
             if (col.index && col.unique) { break; }
           }
           
@@ -330,7 +330,7 @@ namespace STNL {
       size_t dbPort,
       std::string_view dbSchema)
   {  
-    return std::format("dbname={} user={} password={} host={} port={} options=-csearch_path={}",
+    return std::format("dbname={} user={} password='{}' host={} port={} options=-csearch_path={}",
       dbName, dbUser, dbPassword, dbHost, dbPort, dbSchema);
   }
 
