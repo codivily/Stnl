@@ -46,7 +46,7 @@ class Server {
 public:
     Server(asio::io_context& ioc, tcp::endpoint endpoint, fs::path rootDirPath);
     
-    void AddDatabase(std::string const& keyAlias, std::string& connectionString, size_t poolSize = 4, size_t numThreads = 4);
+    void AddDatabase(std::string const& keyAlias, std::string const& connectionString, size_t poolSize = 4, size_t numThreads = 4);
     std::shared_ptr<DB> GetDatabase(std::string const& keyAlias = "default");
 
     static http::message_generator Response(Request const& req, http::status status_code = http::status::ok);

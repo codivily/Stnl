@@ -78,7 +78,8 @@ int main(int argc, char* argv[]) {
     Server server{ioc, endpoint, rootDirPath};
     
     server.Use<BasicMiddleware>();
-    server.AddDatabase("default", DB::GetConnectionString(*dbName, *dbUser, *dbPassword, *dbHost, *dbPort, *dbSchema));
+    std::string connStr = DB::GetConnectionString(*dbName, *dbUser, *dbPassword, *dbHost, *dbPort, *dbSchema);
+    server.AddDatabase("default", connStr);
 
     // add migration to the database that will later run when the server starts
     auto pDB = server.GetDatabase();

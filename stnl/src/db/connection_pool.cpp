@@ -14,7 +14,7 @@
 namespace STNL
 {
 
-  ConnectionPool::ConnectionPool(std::string &connStr, std::size_t maxSize) : connStr_(connStr), maxSize_(maxSize), size_(0)
+  ConnectionPool::ConnectionPool(std::string const& connStr, std::size_t maxSize) : connStr_(connStr), maxSize_(maxSize), size_(0)
   {
     if (maxSize_ < 1) { maxSize_ = 1; }
     pool_.reserve(maxSize_);

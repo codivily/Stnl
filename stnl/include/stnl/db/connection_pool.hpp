@@ -13,7 +13,7 @@
 namespace STNL {
   class ConnectionPool {
     public:
-      ConnectionPool(std::string& connStr, size_t maxSize);
+      ConnectionPool(std::string const& connStr, size_t maxSize);
       pqxx::connection* GetConnection();
       void ReturnConnection(pqxx::connection *con);
 

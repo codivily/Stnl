@@ -38,7 +38,7 @@ namespace STNL {
   class DB {
     
     public:
-      DB(std::string& connStr, asio::io_context& ioc, size_t poolSize = 4, size_t numThreads = 4);
+      DB(std::string const& connStr, asio::io_context& ioc, size_t poolSize = 4, size_t numThreads = 4);
       ~DB();
 
       asio::io_context& GetIOC();

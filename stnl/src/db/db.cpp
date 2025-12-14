@@ -28,7 +28,7 @@ namespace json = boost::json;
 
 namespace STNL {
 
-  DB::DB(std::string& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
+  DB::DB(std::string const& connStr, asio::io_context& ioc, size_t poolSize, size_t numThreads) : pool_(connStr, poolSize), ioc_(ioc), workGuard_(asio::make_work_guard(ioc_)) {
     /* there has to be at least one mandatory thread */
     if (numThreads == 0) { numThreads = 1; }
     threadPool_.reserve(numThreads);

@@ -35,7 +35,7 @@ namespace STNL
         : ioc_(ioc), acceptor_(ioc, endpoint), rootDirPath_(rootDirPath) {} // Fixed: acceptor needs ioc
 
 
-    void Server::AddDatabase(std::string const& keyAlias, std::string& connectionString, size_t poolSize, size_t numThreads) {
+    void Server::AddDatabase(std::string const& keyAlias, std::string const& connectionString, size_t poolSize, size_t numThreads) {
         auto [it, inserted] = databases_.emplace(keyAlias, std::make_shared<DB>(connectionString, ioc_, poolSize, numThreads));
         if (inserted) { databaseKeyAliases_.emplace_back(keyAlias); }
     }
