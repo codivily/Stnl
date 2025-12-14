@@ -1,0 +1,11 @@
+{
+  "name": "sentinel",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "boost-headers",
+    "boost-json",
+    "boost-url",
+    "boost-filesystem",
+    "libpqxx"
+  ]
+}
