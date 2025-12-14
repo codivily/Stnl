@@ -28,6 +28,7 @@
       "binaryDir": "${sourceDir}/build/windows",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/Toolchain-Windows-x86_64.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic",
         "CMAKE_CXX_STANDARD": "20",
         "CMAKE_CXX_STANDARD_REQUIRED": "ON",
