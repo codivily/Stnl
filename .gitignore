@@ -1,4 +1,57 @@
+# Ignore build and CMake artifacts
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/compile_commands.json
+/Makefile
 
+# CMake generated files
+*.cmake
+
+# Object and binary files
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.pdb
+
+# Editor and IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln
+*.vcxproj*
+
+# Local configuration files (sensitive)
+**/config.local.json
+config.local.json
+*.local
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs, caches, coverage
+*.log
+coverage/
+__pycache__/
+*.py[cod]
+
+# Misc
+*~
+*.swp
+*.bak
+
+# Node
+node_modules/
+
+# Allow listing: keep the repo CMake files and top-level README etc.
 build/
 .vscode/
 .vs/
