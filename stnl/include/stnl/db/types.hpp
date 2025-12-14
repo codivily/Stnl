@@ -3,7 +3,7 @@
 
 namespace STNL {
 
-  enum SQLDataType {
+enum SQLDataType {
     Undefined,
     //
     BigInt,
@@ -18,7 +18,7 @@ namespace STNL {
     Timestamp,
     UUID,
     Text
-  };
+};
 
 }
 

@@ -2,6 +2,6 @@
 
 namespace STNL {
 
-  Middleware::Middleware(Server& server) : server_(server) {}
-  
-}
+Middleware::Middleware(Server &server) : server_(server) {}
+
+} // namespace STNL

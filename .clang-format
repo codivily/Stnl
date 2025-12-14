@@ -5,30 +5,40 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 UseTab: Never
 
-# 2. Bracket Handling (Allman-like for functions, classes, etc.)
-# This is the key setting for braces on a new line.
-BreakBeforeBraces: Allman
+# 2. Bracket Handling (Attach braces to the same line)
+# Opening braces will be attached to the previous line (K&R/Attach style).
+BreakBeforeBraces: Attach
 
-# 3. Indentation of braces (Needed for the Allman style)
-AllowShortBlocksOnASingleLine: false
-BreakBeforeBraces: Custom
+# 3. Allow short blocks and short single-line control statements
+# When a block contains only one short statement, place it on the same line
+# as the opening brace (e.g. `if (x) { do_something(); }`).
+AllowShortBlocksOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortCaseLabelsOnASingleLine: true
+
+# Prefer keeping short expressions/assignments on a single line when
+# they fit within the column limit. Increase the default column limit
+# modestly to reduce unnecessary wrapping for short assignments.
+ColumnLimit: 160
+
+# Place `template <...>` on its own line so template declarations are
+# separated from the following declaration/definition.
+BreakTemplateDeclarations: Yes
+
+# Keep other BraceWrapping defaults but do not force newlines for common
+# constructs. Explicitly disable heavy brace wrapping.
 BraceWrapping:
-  AfterClass: true
-  AfterControlStatement: true
-  AfterEnum: true
-  AfterFunction: true
-  AfterNamespace: true
-  AfterStruct: true
-  AfterUnion: true
-  BeforeCatch: true
-  BeforeElse: true
-  BeforeWhile: true
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  # Place `else` on the next line (but keep `catch` attached to the `}`)
+  BeforeElse: false
+  BeforeWhile: false
   IndentBraces: false
-
-# 4. Specific control flow wrapping (to force control flow on separate lines)
-BreakBeforeElse: true
-
-# 5. Handling of short statements (like single-line returns)
-# ClangFormat struggles with enforcing braces *only* on single-line returns, 
-# but this helps with overall style.
-AllowShortIfStatementsOnASingleLine: WithoutElse

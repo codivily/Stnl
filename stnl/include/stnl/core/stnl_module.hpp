@@ -7,19 +7,20 @@
 
 namespace STNL {
 
-  class Server; // forward declaration
+class Server; // forward declaration
 
-  class STNLModule {
-    public:
+class STNLModule {
+  public:
     inline static volatile const char sType{};
-    ~STNLModule() = default;
-    STNLModule(Server& server);
+    virtual ~STNLModule() = default;
+    STNLModule(Server &server);
     virtual void SetupMigrations() {};
     virtual void Setup() {};
     virtual void Launch() {};
-    protected:
-      Server& server_;
-  };
-}
+
+  protected:
+    Server &server_;
+};
+} // namespace STNL
 
 #endif // STNL_STNL_MODULE_HPP

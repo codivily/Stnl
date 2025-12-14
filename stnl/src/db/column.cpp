@@ -1,181 +1,177 @@
 
-#include "stnl/db/types.hpp"
-#include "stnl/db/column.hpp"
+#include <utility>
+
 #include "stnl/core/utils.hpp"
+#include "stnl/db/column.hpp"
+#include "stnl/db/types.hpp"
 
+namespace STNL {
+namespace {
+constexpr unsigned short DEFAULT_NUMERIC_PRECISION = 9;
+constexpr std::size_t DEFAULT_VARCHAR_LENGTH = 255;
+constexpr std::size_t DEFAULT_CHAR_LENGTH = 1;
+constexpr std::size_t DEFAULT_BIT_LENGTH = 1;
+} // namespace
+Column::Column(std::string colTableName, const std::string &colRealName, SQLDataType colType)
+    : tableName(std::move(std::move(colTableName))), realName(colRealName), type(colType), length(0), identity(false), index(false), unique(false),
+      nullable(false), precision(0), scale(0) {
+    name = Utils::StringToLower(colRealName);
+}
 
-namespace STNL
-{
-  Column::Column(std::string colTableName, std::string colRealName, SQLDataType colType)
-    : tableName(colTableName),
-      realName(colRealName), 
-      type(std::move(colType)),
-      length(0),
-      identity(false),
-      nullable(false),
-      precision(0),
-      scale(0),
-      index(false),
-      unique(false),
-      defaultValue{} {
-        name = Utils::StringToLower(colRealName);
-  }
-
-  BigIntProxy::BigIntProxy(Column& c) : ColumnProxy(c) {
+BigIntProxy::BigIntProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::BigInt;
-  }
+}
 
-  BigIntProxy& BigIntProxy::Identity(bool v) {
+auto BigIntProxy::Identity(bool v) -> BigIntProxy & {
     col.identity = v;
     return *this;
-  }
+}
 
-  void BigIntProxy::Index(bool const& v) {
+void BigIntProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  void BigIntProxy::Unique(bool const& v) {
+void BigIntProxy::Unique(bool const &v) {
     col.unique = v;
-  }
+}
 
-  IntegerProxy::IntegerProxy(Column& c) : ColumnProxy(c) {
+IntegerProxy::IntegerProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Integer;
-  }
+}
 
-  IntegerProxy& IntegerProxy::Identity(bool const& v) {
+auto IntegerProxy::Identity(bool const &v) -> IntegerProxy & {
     col.identity = v;
     return *this;
-  }
+}
 
-  void IntegerProxy::Index(bool const& v) {
+void IntegerProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  void IntegerProxy::Unique(bool const& v) {
+void IntegerProxy::Unique(bool const &v) {
     col.unique = v;
-  }
+}
 
-
-  SmallIntProxy::SmallIntProxy(Column& c) : ColumnProxy(c) {
+SmallIntProxy::SmallIntProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::SmallInt;
-  }
+}
 
-  NumericProxy::NumericProxy(Column& c) : ColumnProxy(c) {
+NumericProxy::NumericProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Numeric;
-    col.precision = 9;
+    col.precision = DEFAULT_NUMERIC_PRECISION;
     col.scale = 0;
-  }
+}
 
-  NumericProxy& NumericProxy::Precision(unsigned short v) {
+auto NumericProxy::Precision(unsigned short v) -> NumericProxy & {
     col.precision = v;
     return *this;
-  }
+}
 
-  NumericProxy& NumericProxy::Scale(unsigned short v) {
+auto NumericProxy::Scale(unsigned short v) -> NumericProxy & {
     col.scale = v;
     return *this;
-  }
+}
 
-  BitProxy::BitProxy(Column& c) : ColumnProxy(c) {
+BitProxy::BitProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Bit;
-    col.length = 1;
-  }
+    col.length = DEFAULT_BIT_LENGTH;
+}
 
-  BitProxy& BitProxy::N(unsigned short v) {
+auto BitProxy::N(unsigned short v) -> BitProxy & {
     col.length = v;
     return *this;
-  }
+}
 
-  BitProxy& BitProxy::Default(std::string const& v) {
+auto BitProxy::Default(std::string const &v) -> BitProxy & {
     return ColumnProxy<BitProxy>::Default(v);
-  }
+}
 
-  CharProxy::CharProxy(Column& c) : ColumnProxy(c) {
+CharProxy::CharProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Char;
-    col.length = 1;
-  }
+    col.length = DEFAULT_CHAR_LENGTH;
+}
 
-  CharProxy& CharProxy::Length(std::size_t v) {
+auto CharProxy::Length(std::size_t v) -> CharProxy & {
     col.length = v;
     return *this;
-  }
+}
 
-  void CharProxy::Index(bool const& v) {
+void CharProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  void CharProxy::Unique(bool const& v) {
+void CharProxy::Unique(bool const &v) {
     col.unique = v;
-  }
+}
 
-  VarcharProxy::VarcharProxy(Column& c) : ColumnProxy(c) {
+VarcharProxy::VarcharProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Varchar;
-    col.length = 255;
-  }
+    col.length = DEFAULT_VARCHAR_LENGTH;
+}
 
-  VarcharProxy& VarcharProxy::Length(std::size_t v) {
+auto VarcharProxy::Length(std::size_t v) -> VarcharProxy & {
     col.length = v;
     return *this;
-  }
+}
 
-  void VarcharProxy::Index(bool const& v) {
+void VarcharProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  void VarcharProxy::Unique(bool const& v) {
+void VarcharProxy::Unique(bool const &v) {
     col.unique = v;
-  }
+}
 
-  BooleanProxy::BooleanProxy(Column& c) : ColumnProxy(c) {
+BooleanProxy::BooleanProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Boolean;
-  }
+}
 
-  BooleanProxy& BooleanProxy::Default(std::string const& v) {
+auto BooleanProxy::Default(std::string const &v) -> BooleanProxy & {
     return ColumnProxy<BooleanProxy>::Default(v);
-  }
+}
 
-  DateProxy::DateProxy(Column &c) : ColumnProxy(c) {
+DateProxy::DateProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Date;
-  }
+}
 
-  DateProxy& DateProxy::Default(std::string const& v) {
+auto DateProxy::Default(std::string const &v) -> DateProxy & {
     return ColumnProxy<DateProxy>::Default(v);
-  }
+}
 
-  void DateProxy::Index(bool const& v) {
+void DateProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  TimestampProxy::TimestampProxy(Column& c) : ColumnProxy(c) {
+TimestampProxy::TimestampProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Timestamp;
-  }
+}
 
-  TimestampProxy& TimestampProxy::Default(std::string const& v) {
+auto TimestampProxy::Default(std::string const &v) -> TimestampProxy & {
     return ColumnProxy<TimestampProxy>::Default(v);
-  }
+}
 
-  void TimestampProxy::Index(bool const& v) {
+void TimestampProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  UUIDProxy::UUIDProxy(Column& c) : ColumnProxy(c) {
+UUIDProxy::UUIDProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::UUID;
-  }
+}
 
-  UUIDProxy& UUIDProxy::Default(std::string const& v) {
+auto UUIDProxy::Default(std::string const &v) -> UUIDProxy & {
     return ColumnProxy<UUIDProxy>::Default(v);
-  }
+}
 
-  void UUIDProxy::Index(bool const& v) {
+void UUIDProxy::Index(bool const &v) {
     col.index = v;
-  }
+}
 
-  void UUIDProxy::Unique(bool const& v) {
+void UUIDProxy::Unique(bool const &v) {
     col.unique = v;
-  }
+}
 
-  TextProxy::TextProxy(Column& c) : ColumnProxy(c) {
+TextProxy::TextProxy(Column &c) : ColumnProxy(c) {
     col.type = SQLDataType::Text;
-  }
-  
+}
+
 } // namespace STNL

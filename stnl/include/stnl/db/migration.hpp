@@ -9,25 +9,25 @@
 #include <string>
 #include <vector>
 
-
 namespace STNL {
-  class Migration {
-    public:
-      Migration() = default;
-      void Table(std::string const& tableName, std::function<void(Blueprint&)> adaptFn);
-      std::vector<std::string> const& GetTableNames() const;
-      std::unordered_map<std::string, Blueprint> const& GetBlueprints() const;
+class Migration {
+  public:
+    Migration() = default;
+    void Table(std::string const &tableName, const std::function<void(Blueprint &)> &adaptFn);
+    std::vector<std::string> const &GetTableNames() const;
+    std::unordered_map<std::string, Blueprint> const &GetBlueprints() const;
 
-      void Procedure(std::string const& spName, std::function<void(SrBlueprint&)> adaptFn);
-      std::vector<std::string> const& GetProcedureNames() const;
-      std::unordered_map<std::string, SrBlueprint> const& GetProcedureBlueprints() const;
-    private:
-      std::vector<std::string> tableNames_;
-      std::unordered_map<std::string, Blueprint> blueprints_;
+    void Procedure(std::string const &spName, const std::function<void(SrBlueprint &)> &adaptFn);
+    std::vector<std::string> const &GetProcedureNames() const;
+    std::unordered_map<std::string, SrBlueprint> const &GetProcedureBlueprints() const;
 
-      std::vector<std::string> spNames_;
-      std::unordered_map<std::string, SrBlueprint> spBlueprints_;
-  };
-}
+  private:
+    std::vector<std::string> tableNames_;
+    std::unordered_map<std::string, Blueprint> blueprints_;
+
+    std::vector<std::string> spNames_;
+    std::unordered_map<std::string, SrBlueprint> spBlueprints_;
+};
+} // namespace STNL
 
 #endif // STNL_MIGRATION_HPP

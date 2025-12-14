@@ -1,1 +1,11 @@
-config.*.json
+# Ignore local overrides for main
+config.local.json
+config.local.*
+
+# Build and artifacts used by main
+build/
+*.o
+*.so
+
+# Editor
+.vscode/config.*.json
