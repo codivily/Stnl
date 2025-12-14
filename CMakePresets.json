@@ -12,10 +12,21 @@
         "PostgreSQL_INCLUDE_DIR": "C:\\Program Files\\PostgreSQL\\18\\include"
       }
     },
-     {
+    {
       "name": "linux",
       "displayName": "Default config",
       "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+        "CMAKE_CXX_EXTENSIONS": "OFF"
+      }
+    },
+    {
+      "name": "windows-cross",
+      "displayName": "Windows Cross-Compilation",
+      "binaryDir": "${sourceDir}/build/windows",
+      "toolchainFile": "${sourceDir}/cmake/Toolchain-Windows-x86_64.cmake",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
         "CMAKE_CXX_STANDARD_REQUIRED": "ON",
