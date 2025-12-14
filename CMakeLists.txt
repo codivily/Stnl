@@ -47,7 +47,7 @@ if(CLANG_FORMAT_EXE)
 		COMMENT "Check formatting (clang-format --dry-run)")
 endif()
 # Find required packages
-find_package(Boost COMPONENTS headers filesystem json url uuid)
+find_package(Boost COMPONENTS headers filesystem json url uuid dll)
 
 # Find vcpkg packages
 find_package(libpqxx CONFIG REQUIRED)

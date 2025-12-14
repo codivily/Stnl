@@ -12,6 +12,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/dll.hpp>
 #include <boost/filesystem.hpp>
 #include <cstdint>
 #include <iostream>
@@ -50,11 +51,7 @@ auto main(int /*argc*/, char ** /*argv*/) -> int {
 
     // Use current working directory as the server root directory per user
     // request.
-    fs::path rootDirPath = fs::current_path();
-    try {
-        rootDirPath = fs::canonical(rootDirPath);
-    } catch (const std::exception &) { /* fallback to current_path() */
-    }
+    fs::path rootDirPath = boost::dll::program_location().parent_path();
     Logger::Inf() << ("::main:: Server's rootDirPath: " + rootDirPath.string());
 
     if (fs::exists(rootDirPath / "config.local.json")) {

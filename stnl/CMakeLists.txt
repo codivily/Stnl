@@ -40,16 +40,40 @@ target_compile_definitions(stnl
 )
 
 # Apply all required dependencies to the stnl library
+set(STNL_PUBLIC_LIBS
+    Boost::headers
+)
+
+set(STNL_PRIVATE_LIBS
+    Boost::json
+    Boost::url
+    Boost::filesystem
+    Boost::system
+    libpqxx::pqxx
+)
+
+# Conditionally link Boost::uuid if the imported target is available
+if(TARGET Boost::uuid)
+    list(APPEND STNL_PRIVATE_LIBS Boost::uuid)
+elseif(DEFINED Boost_UUID_LIBRARY AND Boost_UUID_LIBRARY)
+    message(STATUS "Linking against system Boost UUID library: ${Boost_UUID_LIBRARY}")
+    list(APPEND STNL_PRIVATE_LIBS ${Boost_UUID_LIBRARY})
+else()
+    # Try a direct library lookup for common system library names (libboost_uuid)
+    find_library(SYSTEM_BOOST_UUID NAMES boost_uuid libboost_uuid HINTS ${CMAKE_LIBRARY_PATH} PATH_SUFFIXES lib)
+    if(SYSTEM_BOOST_UUID)
+        message(STATUS "Found system Boost UUID library: ${SYSTEM_BOOST_UUID}; linking against it.")
+        list(APPEND STNL_PRIVATE_LIBS ${SYSTEM_BOOST_UUID})
+    else()
+        message(STATUS "Boost::uuid not found; skipping linking against it (header-only usage assumed or install boost-uuid).")
+    endif()
+endif()
+
 target_link_libraries(stnl
     PUBLIC
-        Boost::headers
+        ${STNL_PUBLIC_LIBS}
     PRIVATE
-        Boost::json
-        Boost::url
-        Boost::filesystem
-        Boost::system
-        Boost::uuid
-        libpqxx::pqxx
+        ${STNL_PRIVATE_LIBS}
 )
 
 # Ensure the final library name is set for installation/export if necessary
