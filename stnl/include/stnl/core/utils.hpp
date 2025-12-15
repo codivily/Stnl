@@ -9,25 +9,25 @@
 namespace asio = boost::asio;
 
 namespace STNL {
-namespace Utils {
-std::string StringToLower(const std::string_view s);
-std::string StringToUpper(const std::string_view s);
-std::string TrimLeft(const std::string_view s);
-std::string TrimRight(const std::string_view s);
-std::string Trim(const std::string_view s);
-bool StringCaseCmp(const std::string_view a, std::string_view b);
-std::string FixIndent(const std::string_view s);
-std::string Join(std::vector<std::string> const &parts, std::string const &separator = ";");
-
-template <typename ResultType>
-std::future<ResultType> AsFuture(asio::io_context &ioc, std::function<ResultType()> fn) {
-    using TaskType = std::packaged_task<ResultType()>;
-    auto task = std::make_shared<TaskType>(std::move(fn));
-    std::future<ResultType> fut = task->get_future();
-    asio::post(ioc, [task] { (*task)(); });
-    return fut;
-}
-} // namespace Utils
+    class Utils {
+    public:
+    static auto StringToLower(const std::string_view s) -> std::string;
+    static auto StringToUpper(const std::string_view s) -> std::string;
+    static auto TrimLeft(const std::string_view s) -> std::string;
+    static auto TrimRight(const std::string_view s) -> std::string;
+    static auto Trim(const std::string_view s) -> std::string;
+    static auto StringCaseCmp(const std::string_view a, std::string_view b) -> bool;
+    static auto FixIndent(const std::string_view s) -> std::string;
+    static auto Join(std::vector<std::string> const &parts, std::string const &separator = ";") -> std::string;
+    template <typename ResultType>
+    static auto AsFuture(asio::io_context &ioc, std::function<ResultType()> fn) -> std::future<ResultType> {
+        using TaskType = std::packaged_task<ResultType()>;
+        auto task = std::make_shared<TaskType>(std::move(fn));
+        std::future<ResultType> fut = task->get_future();
+        asio::post(ioc, [task] { (*task)(); });
+        return fut;
+    }
+    };
 } // namespace STNL
 
 #endif // STNL_UTILS_HPP

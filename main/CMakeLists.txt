@@ -11,6 +11,10 @@ include_directories(include src)
 
 add_executable(app ${SOURCES})
 
+if(ENABLE_PCH)
+    target_precompile_headers(app REUSE_FROM stnl)
+endif()
+
 # Link to STNL lib
 set(APP_PUBLIC_LIBS
   Boost::headers

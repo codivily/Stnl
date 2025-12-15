@@ -25,6 +25,19 @@ set(STNL_SOURCES
 # Create the single static library
 add_library(stnl STATIC ${STNL_SOURCES})
 
+if(ENABLE_PCH)
+    target_precompile_headers(stnl PUBLIC
+        <vector>
+        <string>
+        <memory>
+        <variant>
+        <optional>
+        <boost/json.hpp>
+        <boost/url.hpp>
+        <pqxx/pqxx>
+    )
+endif()
+
 # Apply all required includes to the stnl library
 target_include_directories(stnl
     PUBLIC
