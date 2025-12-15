@@ -5,19 +5,21 @@
 #include "stnl/http/request.hpp"
 #include "stnl/http/server.hpp"
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
 #include <boost/beast/http/read.hpp>  // For async_read
 #include <boost/beast/http/write.hpp> // For async_write
 #include <boost/beast/version.hpp>    // For BOOST_BEAST_VERSION_STRING
+#include <boost/filesystem.hpp>
 
 #include <algorithm>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
 #include <iostream>
 #include <string>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace asio = boost::asio;
+namespace fs = boost::filesystem;
 using tcp = boost::asio::ip::tcp;
 
 namespace STNL {
@@ -71,6 +73,30 @@ auto Session::ApplyMiddlewares(Request &req) -> boost::optional<http::message_ge
     }
     return boost::none;
 }
+
+static auto _GetFileMimeType(fs::path const& filePath) -> std::string {
+    // std::string ext = publicPath.extension().string();
+    std::string ext = filePath.extension().string();
+    if (ext == ".html") { return "text/html"; }
+    if (ext == ".css") { return "text/css"; }
+    if (ext == ".js") { return "application/javascript"; }
+    if (ext == ".png") { return "image/png"; }
+    if (ext == ".jpg") { return "image/jpg"; }
+    if (ext == ".jpeg" ) { return "image/jpeg"; }
+    Logger::Dbg() << "GetFileMimeType: Unknown file extension:" + filePath.extension().string();
+    return "application/octet-stream";
+}
+
+static bool _IsLexicalSubpath(const fs::path& base_path, const fs::path& child_path) {
+    const fs::path base_norm = base_path.lexically_normal();
+    const fs::path child_norm = child_path.lexically_normal();
+    auto [base_mismatch, child_mismatch] = std::mismatch(
+        base_norm.begin(), base_norm.end(),
+        child_norm.begin()
+    );
+    return base_mismatch == base_norm.end();
+}
+
 auto Session::HandleRequest(Request &req) -> http::message_generator {
     // FIXED: Extract path-only (strip query) for routing
     std::string_view full_target{httpReq_.target()};
@@ -78,8 +104,26 @@ auto Session::HandleRequest(Request &req) -> http::message_generator {
     size_t query_pos = full_target.find('?');
     if (query_pos != std::string_view::npos) { path = full_target.substr(0, query_pos); }
     Route key{httpReq_.method(), std::string(path)}; // Use path-only
-    auto it = server_.GetRouter().find(key);
-    if (it == server_.GetRouter().end()) { return Server::Response(req, std::string("Not Found (HTTP 404)"), http::status::not_found); }
+    auto it = server_.GetRouter().find(key); 
+    if (it == server_.GetRouter().end()) {
+        if (path.starts_with("/api/") || path == "/api") {
+            return Server::Response(req, http::status::not_found);
+        }
+        if (httpReq_.method() == http::verb::get) {
+            fs::path publicDirPath = server_.GetRootDirPath() / "public";
+            if (fs::exists(publicDirPath)) {
+                fs::path targetFilePath = publicDirPath / path;
+                if (!fs::exists(targetFilePath) || !fs::is_regular_file(targetFilePath) || !_IsLexicalSubpath(publicDirPath, targetFilePath)) {
+                    targetFilePath = publicDirPath / "index.html";
+                }
+                if (fs::exists(targetFilePath)) {
+                    return Server::Response(req, targetFilePath, _GetFileMimeType(targetFilePath));
+                }
+            }
+            // TODO: check in the project public directory
+        }
+        return Server::Response(req, http::status::not_found);
+    }
     // Run the middleware chain before handler
     boost::optional<http::message_generator> result = ApplyMiddlewares(req);
     if (result.has_value()) { return std::move(result.value()); }

@@ -41,10 +41,6 @@ using Blueprint = STNL::Blueprint;
 
 App::App(Server &server) : STNLModule(server) {}
 
-auto App::WebGetHome(Request const &req) -> http::message_generator {
-    return Server::Response(req, server_.GetRootDirPath() / "index.html", "text/html");
-}
-
 auto App::ApiPostData(Request const &req) -> http::message_generator {
     boost::json::object reqData = req.data();
     boost::json::object resData;
@@ -74,10 +70,33 @@ auto App::ApiGetProduct(Request const &req) -> http::message_generator {
 void App::SetupMigrations() {
     auto pDB = server_.GetDatabase();
     if (pDB) {
-        pDB->GetMigration().Table("project", [](Blueprint &bp) {
+        auto mig = pDB->GetMigration();
+        mig.Table("project", [](Blueprint &bp) {
             bp.BigInt("id").Identity().Index();
             bp.UUID("uuid").NotNull().Default().Unique();
             bp.Varchar("name").NotNull();
+            bp.Bit("active").N(1).NotNull().Default();
+        });
+        mig.Table("project", [](Blueprint &bp) {
+            bp.BigInt("id").Identity().Index();
+            bp.UUID("uuid").NotNull().Default().Unique();
+            bp.Varchar("name").NotNull();
+            bp.Bit("active").N(1).NotNull().Default();
+        });
+        mig.Table("product", [](Blueprint &bp) {
+            bp.BigInt("id").Identity().Unique();
+            bp.UUID("uuid").Default().Index();
+            bp.Varchar("name").Length(255).NotNull();
+            bp.Numeric("price").Precision(9).Scale(2).Null();
+            bp.Text("description").Null();
+            bp.Timestamp("utcdt").NotNull();
+            bp.Bit("active").N(1).NotNull().Default();
+        });
+        mig.Table("category", [](Blueprint &bp) {
+            bp.BigInt("id").Identity().Unique();
+            bp.UUID("uuid").Null().Index();
+            bp.Varchar("name").NotNull().Default("'<empty>'");
+            bp.Timestamp("utcdt").NotNull().Default();
             bp.Bit("active").N(1).NotNull().Default();
         });
     }
@@ -86,7 +105,6 @@ void App::SetupMigrations() {
 void App::Setup() {
     Logger::Dbg() << ("App::Setup()");
     std::shared_ptr<App> self = std::static_pointer_cast<App>(shared_from_this());
-    server_.Get("/", [self](Request const &req) { return self->WebGetHome(req); });
     server_.Post("/api/data", [self](Request const &req) { return self->ApiPostData(req); });
     server_.Get("/api/product", [self](Request const &req) { return self->ApiGetProduct(req); });
 }

@@ -22,8 +22,6 @@ class App : public STNLModule, public std::enable_shared_from_this<App> {
     void SetupMigrations() override;
     void Setup() override;
     void Launch() override;
-    //
-    http::message_generator WebGetHome(Request const &req);
     http::message_generator ApiPostData(Request const &req);
     http::message_generator ApiGetProduct(Request const &req);
 };
