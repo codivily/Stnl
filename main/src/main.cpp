@@ -1,4 +1,4 @@
-
+#include "main.hpp"
 #include "modules/app/app.hpp"
 #include "modules/ticker/ticker.hpp"
 
@@ -49,19 +49,7 @@ auto main(int /*argc*/, char ** /*argv*/) -> int {
     static constexpr int DEFAULT_DB_PORT = 5432;
     tcp::endpoint endpoint{tcp::v4(), DEFAULT_SERVER_PORT};
 
-    // Use current working directory as the server root directory per user
-    // request.
-    fs::path rootDirPath = boost::dll::program_location().parent_path();
-    Logger::Inf() << ("::main:: Server's rootDirPath: " + rootDirPath.string());
-
-    if (fs::exists(rootDirPath / "config.local.json")) {
-        Config::Init(rootDirPath / "config.local.json");
-    } else if (fs::exists(rootDirPath / "config.json")) {
-        Config::Init(rootDirPath / "config.json");
-    } else {
-        Config::Init(rootDirPath / "config.json");
-    }
-
+    Logger::Inf() << ("::main:: Server's rootDirPath: " + Config::GetRootDirPath().string());
     // Setup the database connection
     // Keep these on single lines for readability
     // clang-format off
@@ -78,7 +66,7 @@ auto main(int /*argc*/, char ** /*argv*/) -> int {
     if (serverPort) { endpoint.port(serverPort.value()); }
     Logger::Inf() << ("::main:: Server listening on " + endpoint.address().to_string() + ":" + std::to_string(endpoint.port()));
 
-    Server server{ioc, endpoint, rootDirPath};
+    Server server{ioc, endpoint, Config::GetRootDirPath()};
 
     server.Use<BasicMiddleware>();
     std::string connStr = DB::GetConnectionString(*dbName, *dbUser, *dbPassword, *dbHost, *dbPort, *dbSchema);

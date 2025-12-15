@@ -2,17 +2,18 @@
 
 #include "stnl/core/logger.hpp"
 
+#include <boost/dll.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/json.hpp>
 #include <boost/optional.hpp>
 #include <boost/system.hpp>
 
-#include <cstdlib> // for std::atexit
 #include <fstream>
 #include <iostream>
 #include <mutex>
 #include <stdexcept>
 #include <string>
+#include <memory>
 
 namespace json = boost::json;
 namespace fs = boost::filesystem;
@@ -22,18 +23,38 @@ namespace STNL {
 std::unique_ptr<Config> Config::instance_ = nullptr;
 std::mutex Config::initMutex_;
 
-void Config::Init(const fs::path &configPath) {
-    std::lock_guard<std::mutex> lock(initMutex_);
-    if (instance_ != nullptr) { return; }
-    instance_ = MakeInstance(configPath);
+auto Config::GetRootDirPath() -> fs::path const& {
+    return Config::Instance().rootDirPath_;
 }
 
-Config::Config(const fs::path &configPath) {
-    if (!LoadFromFile(configPath)) { throw std::runtime_error("Config::Config Failed to load config from: " + configPath.string()); }
+auto Config::Instance() -> Config& {
+    if (instance_ == nullptr) {
+        std::lock_guard<std::mutex> lock(initMutex_);
+        if (instance_ == nullptr) {
+            instance_.reset(new Config());
+        }
+    }
+    return *instance_;
 }
 
-auto Config::MakeInstance(const fs::path &configPath) -> std::unique_ptr<Config> {
-    return std::unique_ptr<Config>(new Config(configPath));
+Config::Config(): rootDirPath_(boost::dll::program_location().parent_path()) {
+    bool bLoadError = false;
+    fs::path configPath;
+    if (fs::exists(rootDirPath_ / "config.local.json")) {
+        configPath = rootDirPath_ / "config.local.json";
+        bLoadError = !LoadFromFile(configPath);
+    }
+    else if (fs::exists(rootDirPath_ / "config.json")) {
+        configPath = rootDirPath_ / "config.json";
+        bLoadError = !LoadFromFile(configPath);
+    }
+    else {
+        Logger::Wrn() << "Config::Config: No config.json or config.local.json file to load";
+    }
+    if (bLoadError) {
+        throw std::runtime_error("Config::Config Failed to load config from: " + configPath.string());
+    }
+    else if (configPath.c_str()) { Logger::Dbg() << "Config::Config: loaded: " + configPath.string(); }
 }
 
 auto Config::LoadFromFile(const fs::path &configPath) -> bool {
@@ -51,7 +72,7 @@ auto Config::LoadFromFile(const fs::path &configPath) -> bool {
     boost::system::error_code ec;
     data_ = json::parse(content, ec);
     if (ec) {
-        std::cerr << "Failed to parse config file: " + ec.message() << '\n';
+        std::cerr << "Failed to parse config file: " + ec.what() << '\n';
         return false;
     }
     return true;

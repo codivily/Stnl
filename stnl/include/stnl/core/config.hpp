@@ -21,11 +21,13 @@ namespace STNL {
 class Config {
 
   public:
-    static void Init(const fs::path &configPath);
+    static auto Instance() -> Config&;
+
+    static auto GetRootDirPath() -> fs::path const&;
+
     template <typename T>
     static boost::optional<T> Value(const std::string &keyPath, boost::optional<T> defaultValue = boost::none) {
-        if (!instance_) { return defaultValue; }
-        return instance_->GetValue<T>(keyPath, defaultValue);
+        return  Config::Instance().GetValue<T>(keyPath, defaultValue);
     }
 
     template <typename T>
@@ -38,10 +40,11 @@ class Config {
     static std::mutex initMutex_;
 
     json::value data_;
-
-    Config(const fs::path &configPath);
+    fs::path rootDirPath_;
+    
+    Config();
     bool LoadFromFile(const fs::path &configPath);
-    static std::unique_ptr<Config> MakeInstance(const fs::path &configPath);
+
 
     template <typename T>
     boost::optional<T> GetValue(const std::string &keyPath, boost::optional<T> defaultValue = boost::none) {
