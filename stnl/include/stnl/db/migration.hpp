@@ -1,5 +1,5 @@
-#ifndef STNL_MIGRATION_HPP
-#define STNL_MIGRATION_HPP
+#ifndef STNL_DB_MIGRATION_HPP
+#define STNL_DB_MIGRATION_HPP
 
 #include "stnl/db/blueprint.hpp"
 #include "stnl/db/sr_blueprint.hpp"
@@ -30,4 +30,4 @@ class Migration {
 };
 } // namespace STNL
 
-#endif // STNL_MIGRATION_HPP
+#endif // STNL_DB_MIGRATION_HPP

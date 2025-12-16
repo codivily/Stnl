@@ -1,6 +1,6 @@
 
-#ifndef STNL_MIGRATOR_HPP
-#define STNL_MIGRATOR_HPP
+#ifndef STNL_DB_MIGRATOR_HPP
+#define STNL_DB_MIGRATOR_HPP
 
 #include "stnl/db/blueprint.hpp"
 #include "stnl/db/column.hpp"
@@ -46,4 +46,4 @@ class Migrator {
 };
 } // namespace STNL
 
-#endif // STNL_MIGRATOR_HPP
+#endif // STNL_DB_MIGRATOR_HPP

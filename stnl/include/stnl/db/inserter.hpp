@@ -1,5 +1,5 @@
-#ifndef STNL_INSERTER_HPP
-#define STNL_INSERTER_HPP
+#ifndef STNL_DB_INSERTER_HPP
+#define STNL_DB_INSERTER_HPP
 
 #include <pqxx/pqxx>
 
@@ -62,4 +62,4 @@ class BatchInserter {
 };
 } // namespace STNL
 
-#endif // STNL_INSERTER_HPP
+#endif // STNL_DB_INSERTER_HPP

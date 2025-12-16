@@ -1,5 +1,6 @@
 
 #include "stnl/db/blueprint.hpp"
+
 #include "stnl/core/utils.hpp"
 #include "stnl/db/column.hpp"
 

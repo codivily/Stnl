@@ -1,5 +1,5 @@
-#ifndef STNL_BLUEPRINT_HTPP
-#define STNL_BLUEPRINT_HTPP
+#ifndef STNL_DB_BLUEPRINT_HPP
+#define STNL_DB_BLUEPRINT_HPP
 
 #include "stnl/db/column.hpp"
 
@@ -19,30 +19,29 @@ class CharProxy;      // Forward declaration
 class VarcharProxy;   // Forward declaration
 class BooleanProxy;   // Forward declaration
 class DateProxy;      // Forward declaration
-class TimestampProxy; // Forward declration
+class TimestampProxy; // Forward declaration
 class UUIDProxy;      // Forward declaration
 class TextProxy;      // Forward declaration
 
 class Blueprint {
   public:
     explicit Blueprint(std::string tableName);
-    virtual ~Blueprint() = default;
-    std::string const &GetTableName() const;
-    std::unordered_map<std::string, Column> const &GetColumns() const;
-    std::vector<std::string> const &GetColumnNames() const;
+    auto GetTableName() const -> std::string const &;
+    auto GetColumns() const -> std::unordered_map<std::string, Column> const &;
+    auto GetColumnNames() const -> std::vector<std::string> const &;
 
-    BigIntProxy BigInt(const std::string &name);
-    IntegerProxy Integer(const std::string &name);
-    SmallIntProxy SmallInt(const std::string &name);
-    NumericProxy Numeric(const std::string &name);
-    BitProxy Bit(const std::string &name);
-    CharProxy Char(const std::string &name);
-    VarcharProxy Varchar(const std::string &name);
-    BooleanProxy Boolean(const std::string &name);
-    DateProxy Date(const std::string &name);
-    TimestampProxy Timestamp(const std::string &name);
-    UUIDProxy UUID(const std::string &name);
-    TextProxy Text(const std::string &name);
+    auto BigInt(const std::string &name) -> BigIntProxy;
+    auto Integer(const std::string &name) -> IntegerProxy;
+    auto SmallInt(const std::string &name) -> SmallIntProxy;
+    auto Numeric(const std::string &name) -> NumericProxy;
+    auto Bit(const std::string &name) -> BitProxy;
+    auto Char(const std::string &name) -> CharProxy;
+    auto Varchar(const std::string &name) -> VarcharProxy;
+    auto Boolean(const std::string &name) -> BooleanProxy;
+    auto Date(const std::string &name) -> DateProxy;
+    auto Timestamp(const std::string &name) -> TimestampProxy;
+    auto UUID(const std::string &name) -> UUIDProxy;
+    auto Text(const std::string &name) -> TextProxy;
 
     void AddColumn(Column &&col);
 
@@ -55,4 +54,4 @@ class Blueprint {
 };
 } // namespace STNL
 
-#endif // STNL_BLUEPRINT_HTPP
+#endif // STNL_DB_BLUEPRINT_HPP

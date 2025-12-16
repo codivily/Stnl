@@ -1,5 +1,5 @@
-#ifndef STNL_UTILS_HPP
-#define STNL_UTILS_HPP
+#ifndef STNL_CORE_UTILS_HPP
+#define STNL_CORE_UTILS_HPP
 
 #include <boost/asio.hpp>
 #include <future>
@@ -30,4 +30,4 @@ namespace STNL {
     };
 } // namespace STNL
 
-#endif // STNL_UTILS_HPP
+#endif // STNL_CORE_UTILS_HPP

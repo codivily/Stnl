@@ -1,5 +1,5 @@
-#ifndef STNL_COLUMN_HPP
-#define STNL_COLUMN_HPP
+#ifndef STNL_DB_COLUMN_HPP
+#define STNL_DB_COLUMN_HPP
 
 #include "types.hpp"
 #include <boost/optional.hpp>
@@ -54,17 +54,17 @@ class ColumnProxy {
 class BigIntProxy : public ColumnProxy<BigIntProxy> {
   public:
     BigIntProxy(Column &c);
-    BigIntProxy &Identity(bool v = true);
-    void Index(bool const &v = true);
-    void Unique(bool const &v = true);
+    auto Identity(bool v = true) -> BigIntProxy &;
+    auto Index(bool v = true) -> BigIntProxy &;
+    auto Unique(bool v = true) -> BigIntProxy &;
 };
 
 class IntegerProxy : public ColumnProxy<IntegerProxy> {
   public:
     IntegerProxy(Column &c);
-    IntegerProxy &Identity(bool const &v = true);
-    void Index(bool const &v = true);
-    void Unique(bool const &v = true);
+    auto Identity(bool v = true) -> IntegerProxy &;
+    auto Index(bool v = true) -> IntegerProxy &;
+    auto Unique(bool v = true) -> IntegerProxy &;
 };
 
 class SmallIntProxy : public ColumnProxy<SmallIntProxy> {
@@ -90,16 +90,16 @@ class CharProxy : public ColumnProxy<CharProxy> {
   public:
     CharProxy(Column &c);
     CharProxy &Length(std::size_t v);
-    void Index(bool const &v = true);
-    void Unique(bool const &v = true);
+    auto Index(bool v = true) -> CharProxy &;
+    auto Unique(bool v = true) -> CharProxy &;
 };
 
 class VarcharProxy : public ColumnProxy<VarcharProxy> {
   public:
     VarcharProxy(Column &c);
     VarcharProxy &Length(std::size_t v);
-    void Index(bool const &v = true);
-    void Unique(bool const &v = true);
+    auto Index(bool v = true) -> VarcharProxy &;
+    auto Unique(bool v = true) -> VarcharProxy &;
 };
 
 class BooleanProxy : public ColumnProxy<BooleanProxy> {
@@ -112,22 +112,22 @@ class DateProxy : public ColumnProxy<DateProxy> {
   public:
     DateProxy(Column &c);
     DateProxy &Default(std::string const &v = "CURRENT_DATE") override;
-    void Index(bool const &v = true);
+    auto Index(bool v = true) -> DateProxy &;
 };
 
 class TimestampProxy : public ColumnProxy<TimestampProxy> {
   public:
     TimestampProxy(Column &c);
     TimestampProxy &Default(std::string const &v = "CURRENT_TIMESTAMP") override;
-    void Index(bool const &v = true);
+    auto Index(bool v = true) -> TimestampProxy &;
 };
 
 class UUIDProxy : public ColumnProxy<UUIDProxy> {
   public:
     UUIDProxy(Column &c);
     UUIDProxy &Default(std::string const &v = "uuidv7()") override;
-    void Index(bool const &v = true);
-    void Unique(bool const &v = true);
+    auto Index(bool v = true) -> UUIDProxy &;
+    auto Unique(bool v = true) -> UUIDProxy &;
 };
 
 class TextProxy : public ColumnProxy<TextProxy> {
@@ -137,4 +137,4 @@ class TextProxy : public ColumnProxy<TextProxy> {
 
 } // namespace STNL
 
-#endif // STNL_COLUMN_HPP
+#endif // STNL_DB_COLUMN_HPP

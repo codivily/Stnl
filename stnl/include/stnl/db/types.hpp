@@ -3,7 +3,7 @@
 
 namespace STNL {
 
-enum SQLDataType {
+enum class SQLDataType {
     Undefined,
     //
     BigInt,
