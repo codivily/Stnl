@@ -1,4 +1,5 @@
 #include "stnl/http/session.hpp"
+#include "stnl/core/config.hpp"
 #include "stnl/core/logger.hpp"
 #include "stnl/http/core.hpp"
 #include "stnl/http/middleware.hpp"
@@ -31,22 +32,54 @@ void Session::Run() {
 }
 
 void Session::DoRead() {
-    httpReq_ = HttpRequest{};
-    http::async_read(stream_, buffer_, httpReq_, beast::bind_front_handler(&Session::OnRead, shared_from_this()));
+    // Reset parser for new request
+    parser_.emplace();
+    
+    // Get body limit from config or use default
+    size_t bodyLimit = DEFAULT_BODY_LIMIT;
+    auto configLimit = Config::Value<int64_t>("http.maxBodySize");
+    if (configLimit.has_value() && configLimit.value() > 0) {
+        bodyLimit = static_cast<size_t>(configLimit.value());
+    }
+    parser_->body_limit(bodyLimit);
+    
+    // Set request timeout
+    stream_.expires_after(REQUEST_TIMEOUT);
+    
+    http::async_read(stream_, buffer_, *parser_, beast::bind_front_handler(&Session::OnRead, shared_from_this()));
 }
 
 void Session::OnRead(beast::error_code ec, std::size_t /*bytes_transferred*/) {
+    // Cancel timeout
+    beast::get_lowest_layer(stream_).expires_never();
+    
     if (ec == http::error::end_of_stream) {
         beast::error_code ec2;
-        stream_.socket().shutdown(tcp::socket::shutdown_send,
-                                  ec2); // Fixed: was "shutdown_end"
+        stream_.socket().shutdown(tcp::socket::shutdown_send, ec2);
         return;
     }
+    
+    if (ec == http::error::body_limit) {
+        Logger::Wrn() << "Session::OnRead: Request body too large";
+        // Send 413 Payload Too Large
+        auto makeResponse = [&]() -> http::message_generator {
+            http::response<http::string_body> res{http::status::payload_too_large, 11};
+            res.set(http::field::server, "STNL");
+            res.set(http::field::content_type, "text/plain");
+            res.body() = "Request body too large";
+            res.prepare_payload();
+            return res;
+        };
+        beast::async_write(stream_, makeResponse(), beast::bind_front_handler(&Session::OnWrite, shared_from_this()));
+        return;
+    }
+    
     if (ec) {
         Logger::Err() << "Session::OnRead: " << ec.message();
         return;
     }
-    Request req = Request::parse(httpReq_); // Wrap the HttpRequest for easier access
+    
+    Request req = Request::parse(parser_->get());
     http::message_generator res = HandleRequest(req);
     keepAlive_ = res.keep_alive();
     beast::async_write(stream_, std::move(res), beast::bind_front_handler(&Session::OnWrite, shared_from_this()));
@@ -151,12 +184,12 @@ auto Session::HandleRequest(Request &req) -> http::message_generator {
     }
     
     // Extract path-only (strip query) for routing
-    std::string_view full_target{httpReq_.target()};
+    std::string_view full_target{parser_->get().target()};
     std::string_view path = full_target;
     size_t query_pos = full_target.find('?');
     if (query_pos != std::string_view::npos) { path = full_target.substr(0, query_pos); }
     
-    Route key{httpReq_.method(), std::string(path)};
+    Route key{parser_->get().method(), std::string(path)};
     auto it = server_.GetRouter().find(key); 
     
     if (it == server_.GetRouter().end()) {
@@ -166,7 +199,7 @@ auto Session::HandleRequest(Request &req) -> http::message_generator {
         }
         
         // Handle static files
-        if (httpReq_.method() == http::verb::get) {
+        if (parser_->get().method() == http::verb::get) {
             fs::path publicDirPath = server_.GetRootDirPath() / "public";
             if (fs::exists(publicDirPath)) {
                 fs::path targetFilePath = publicDirPath / path;

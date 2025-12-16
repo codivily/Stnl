@@ -24,12 +24,17 @@ class Session : public std::enable_shared_from_this<Session> {
     void OnWrite(beast::error_code ec, std::size_t bytes_transferred);
     http::message_generator HandleRequest(Request &req);
     boost::optional<http::message_generator> ApplyMiddlewares(Request &req);
+    void SetupTimeout();
+    void OnTimeout(beast::error_code ec);
 
-    beast::tcp_stream stream_; // Fixed typo: was "stram_"
+    beast::tcp_stream stream_;
     beast::flat_buffer buffer_;
-    HttpRequest httpReq_;
-    Server &server_; // Access routes & middleware
+    boost::optional<http::request_parser<http::string_body>> parser_;  // Use optional parser for proper reset
+    Server &server_;
     bool keepAlive_;
+    
+    static constexpr size_t DEFAULT_BODY_LIMIT = 10 * 1024 * 1024;  // 10MB
+    static constexpr std::chrono::seconds REQUEST_TIMEOUT{30};       // 30 seconds
 };
 } // namespace STNL
 

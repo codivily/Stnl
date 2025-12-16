@@ -60,18 +60,27 @@ void process_multipart_part(const std::string &body, size_t part_pos, size_t nex
     size_t content_end = next_boundary;
     while (content_end > part_pos && (body[content_end - 1] == '\r' || body[content_end - 1] == '\n')) { --content_end; }
 
-    std::string content = body.substr(part_pos, content_end - part_pos);
-
     if (!filename.empty()) {
-        // Uploaded file
+        // Uploaded file - stream directly to disk without intermediate buffer
         std::string uuid_str = to_string(random_generator{}());
         fs::path file_path = fs::path(temp_dir) / uuid_str;
 
         std::ofstream ofs(file_path.string(), std::ios::binary);
-        if (ofs) { ofs.write(content.data(), static_cast<std::streamsize>(content.size())); }
+        if (ofs) {
+            // Write directly from body buffer to file in chunks
+            constexpr size_t CHUNK_SIZE = 8192;  // 8KB chunks
+            size_t current_pos = part_pos;
+            
+            while (current_pos < content_end) {
+                size_t chunk_size = std::min(CHUNK_SIZE, content_end - current_pos);
+                ofs.write(body.data() + current_pos, static_cast<std::streamsize>(chunk_size));
+                current_pos += chunk_size;
+            }
+        }
         files_out.emplace_back(UploadedFile{.name = std::move(name), .filename = std::move(filename), .file = std::move(file_path)});
     } else if (!name.empty()) {
-        // Regular field
+        // Regular field - small data, can use substring
+        std::string content = body.substr(part_pos, content_end - part_pos);
         data_out[name] = content;
     }
 }
