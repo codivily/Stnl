@@ -43,7 +43,7 @@ void Session::OnRead(beast::error_code ec, std::size_t /*bytes_transferred*/) {
         return;
     }
     if (ec) {
-        std::cerr << "Session::OnRead: ERROR: " << ec.message() << '\n';
+        Logger::Err() << "Session::OnRead: " << ec.message();
         return;
     }
     Request req = Request::parse(httpReq_); // Wrap the HttpRequest for easier access
@@ -54,7 +54,7 @@ void Session::OnRead(beast::error_code ec, std::size_t /*bytes_transferred*/) {
 
 void Session::OnWrite(beast::error_code ec, std::size_t /*bytes_transferred*/) {
     if (ec) {
-        std::cerr << "Session::OnWrite: ERROR: " << ec.message() << '\n';
+        Logger::Err() << "Session::OnWrite: " << ec.message();
         return;
     }
     if (!keepAlive_) { // Fixed: was "need_eof()" which isn't standard; use
@@ -75,15 +75,61 @@ auto Session::ApplyMiddlewares(Request &req) -> boost::optional<http::message_ge
 }
 
 static auto _GetFileMimeType(fs::path const& filePath) -> std::string {
-    // std::string ext = publicPath.extension().string();
+    static const std::unordered_map<std::string, std::string> mimeTypes = {
+        // Text
+        {".html", "text/html"},
+        {".htm", "text/html"},
+        {".css", "text/css"},
+        {".txt", "text/plain"},
+        {".csv", "text/csv"},
+        {".xml", "text/xml"},
+        
+        // JavaScript
+        {".js", "application/javascript"},
+        {".mjs", "application/javascript"},
+        {".json", "application/json"},
+        
+        // Images
+        {".png", "image/png"},
+        {".jpg", "image/jpeg"},
+        {".jpeg", "image/jpeg"},
+        {".gif", "image/gif"},
+        {".svg", "image/svg+xml"},
+        {".ico", "image/x-icon"},
+        {".webp", "image/webp"},
+        {".bmp", "image/bmp"},
+        
+        // Fonts
+        {".woff", "font/woff"},
+        {".woff2", "font/woff2"},
+        {".ttf", "font/ttf"},
+        {".otf", "font/otf"},
+        {".eot", "application/vnd.ms-fontobject"},
+        
+        // Audio/Video
+        {".mp3", "audio/mpeg"},
+        {".wav", "audio/wav"},
+        {".mp4", "video/mp4"},
+        {".webm", "video/webm"},
+        
+        // Archives
+        {".zip", "application/zip"},
+        {".gz", "application/gzip"},
+        {".tar", "application/x-tar"},
+        
+        // Documents
+        {".pdf", "application/pdf"},
+        {".doc", "application/msword"},
+        {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    };
+    
     std::string ext = filePath.extension().string();
-    if (ext == ".html") { return "text/html"; }
-    if (ext == ".css") { return "text/css"; }
-    if (ext == ".js") { return "application/javascript"; }
-    if (ext == ".png") { return "image/png"; }
-    if (ext == ".jpg") { return "image/jpg"; }
-    if (ext == ".jpeg" ) { return "image/jpeg"; }
-    Logger::Dbg() << "GetFileMimeType: Unknown file extension:" + filePath.extension().string();
+    auto it = mimeTypes.find(ext);
+    if (it != mimeTypes.end()) {
+        return it->second;
+    }
+    
+    Logger::Dbg() << "GetFileMimeType: Unknown extension: " << ext;
     return "application/octet-stream";
 }
 
@@ -98,17 +144,28 @@ static bool _IsLexicalSubpath(const fs::path& base_path, const fs::path& child_p
 }
 
 auto Session::HandleRequest(Request &req) -> http::message_generator {
-    // FIXED: Extract path-only (strip query) for routing
+    // Run middleware chain FIRST (before route matching)
+    boost::optional<http::message_generator> middlewareResult = ApplyMiddlewares(req);
+    if (middlewareResult.has_value()) { 
+        return std::move(middlewareResult.value()); 
+    }
+    
+    // Extract path-only (strip query) for routing
     std::string_view full_target{httpReq_.target()};
     std::string_view path = full_target;
     size_t query_pos = full_target.find('?');
     if (query_pos != std::string_view::npos) { path = full_target.substr(0, query_pos); }
-    Route key{httpReq_.method(), std::string(path)}; // Use path-only
+    
+    Route key{httpReq_.method(), std::string(path)};
     auto it = server_.GetRouter().find(key); 
+    
     if (it == server_.GetRouter().end()) {
+        // Handle API routes
         if (path.starts_with("/api/") || path == "/api") {
             return Server::Response(req, http::status::not_found);
         }
+        
+        // Handle static files
         if (httpReq_.method() == http::verb::get) {
             fs::path publicDirPath = server_.GetRootDirPath() / "public";
             if (fs::exists(publicDirPath)) {
@@ -120,13 +177,11 @@ auto Session::HandleRequest(Request &req) -> http::message_generator {
                     return Server::Response(req, targetFilePath, _GetFileMimeType(targetFilePath));
                 }
             }
-            // TODO: check in the project public directory
         }
         return Server::Response(req, http::status::not_found);
     }
-    // Run the middleware chain before handler
-    boost::optional<http::message_generator> result = ApplyMiddlewares(req);
-    if (result.has_value()) { return std::move(result.value()); }
+    
+    // Execute matched route handler
     return it->second(req);
 }
 

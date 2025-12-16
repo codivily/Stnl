@@ -53,10 +53,11 @@ auto Server::Response(Request const &req, const fs::path &file_path, const std::
     http::response<http::file_body> res{status_code, req.GetHttpReq().version()};
     beast::error_code ec;
     res.body().open(file_path.string().c_str(), beast::file_mode::read, ec);
-    if (ec) { return Server::Response(req, std::string("Interval Server Error"), http::status::internal_server_error); }
+    if (ec) { return Server::Response(req, std::string("Internal Server Error"), http::status::internal_server_error); }
     res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
     res.set(http::field::content_type, content_type);
-    res.keep_alive(false);
+    res.keep_alive(req.GetHttpReq().keep_alive());  // Respect client's keep-alive
+    res.prepare_payload();
     return http::message_generator{std::move(res)};
 }
 
@@ -135,7 +136,7 @@ void Server::OnAccept(beast::error_code ec, tcp::socket socket) {
     if (!ec) {
         std::make_shared<Session>(std::move(socket), *this)->Run();
     } else {
-        std::cerr << "Server::OnAccept: ERROR: " << ec.message() << '\n';
+        Logger::Err() << "Server::OnAccept: " << ec.message();
     }
     DoAccept();
 }
@@ -176,7 +177,7 @@ void Server::LaunchModules() {
             asio::post(ioc_, [m]() {
                 try {
                     m->Launch();
-                } catch (std::exception &e) { std::cerr << "Server::LaunchModules: Error: " << e.what() << '\n'; }
+                } catch (std::exception &e) { Logger::Err() << "Server::LaunchModules: " << e.what(); }
             });
         }
     }
