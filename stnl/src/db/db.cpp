@@ -132,8 +132,8 @@ auto DB::InsertBatch(std::string const &tableName, const std::function<void(Batc
 }
 
 auto DB::QInsertBatch(std::string const &tableName, std::function<void(BatchInserter &batch)> populateBatchFn) -> std::future<QResult> {
-    return Utils::AsFuture<QResult>(ioc_, [this, tableName = std::string(tableName), populateBatchFn = std::move(populateBatchFn)]() {
-        return this->InsertBatch(tableName, populateBatchFn);
+    return Utils::AsFuture<QResult>(ioc_, [this, tableName = &tableName, populateBatchFn = std::move(populateBatchFn)]() {
+        return this->InsertBatch(*tableName, populateBatchFn);
     });
 }
 
@@ -173,7 +173,7 @@ auto DB::TableExists(std::string_view const tableName) -> bool {
 }
 
 auto DB::GetTableIndexNames(std::string_view tableName) -> std::vector<std::string> {
-    std::string qSQL{"SELECT indexname FROM pg_indexes WHERE LOWER(tablename) = LOWER('" + std::string(tableName) + "')"};
+    std::string qSQL = std::format("SELECT indexname FROM pg_indexes WHERE LOWER(tablename) = LOWER('{}')", tableName);
     QResult r = this->Exec(qSQL);
     std::vector<std::string> indexNameLst;
     if (r.ok) {
@@ -248,6 +248,7 @@ auto DB::GetTableColumns(std::string_view tableName) -> std::vector<Column> {
                                    Utils::Join(select, ","), Utils::Join(where, " AND "));
     QResult r = this->Exec(qSQL);
     std::vector<Column> columns;
+    columns.reserve(r.data.size());
 
     if (!r.ok) {
         STNL::Logger::Err() << ("DB::GetTableColumns: Error executing query: " + r.msg);
@@ -371,6 +372,7 @@ auto DB::RowToJson(pqxx::row const &row, std::unordered_map<size_t, std::string>
 
 auto DB::ConvertPQXXResultToJson(pqxx::result const &result) -> boost::json::value {
     boost::json::array jsonArray;
+    jsonArray.reserve(result.size());
     std::unordered_map<size_t, std::string> const &dataTypes = this->GetDataTypes();
     for (pqxx::row const &row : result) { jsonArray.emplace_back(DB::RowToJson(row, dataTypes)); }
     return boost::json::value{std::move(jsonArray)};

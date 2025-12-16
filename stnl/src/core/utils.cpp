@@ -61,17 +61,25 @@ auto Utils::StringCaseCmp(std::string_view a, std::string_view b) -> bool {
 }
 
 auto Utils::Join(std::vector<std::string> const &parts, std::string const &separator) -> std::string {
-    std::stringstream ss;
-    bool bFirst = true;
+    if (parts.empty()) { return ""; }
+    if (parts.size() == 1) { return parts[0]; }
+    
+    // Pre-calculate total size to avoid reallocations
+    size_t totalSize = 0;
     for (const auto &s : parts) {
-        if (!bFirst) {
-            ss << separator;
-        } else {
-            bFirst = false;
-        }
-        ss << s;
+        totalSize += s.size();
     }
-    return ss.str();
+    totalSize += separator.size() * (parts.size() - 1);
+    
+    std::string result;
+    result.reserve(totalSize);
+    
+    result += parts[0];
+    for (size_t i = 1; i < parts.size(); ++i) {
+        result += separator;
+        result += parts[i];
+    }
+    return result;
 }
 
 auto Utils::FixIndent(const std::string_view s) -> std::string {

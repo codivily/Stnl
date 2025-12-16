@@ -141,7 +141,7 @@ void Migrator::CollectAlterStatementsForColumn(std::string const &tableName, Col
 
     std::string desiredDefaultValue = std::string(desiredCol.defaultValue);
     if (desiredCol.type == SQLDataType::UUID && desiredCol.identity && desiredCol.defaultValue.empty()) { desiredDefaultValue = std::string("uuidv7()"); }
-    if (strcmp(currentCol.defaultValue.c_str(), desiredDefaultValue.c_str()) != 0) {
+    if (currentCol.defaultValue != desiredDefaultValue) {
         std::string defaultSQL = BuildDefaultValueSQL(tableName, desiredCol, desiredDefaultValue);
         alterStatements.emplace_back(defaultSQL);
         Logger::Inf() << std::format("Migrator: {}", defaultSQL);
@@ -226,27 +226,35 @@ auto Migrator::GenerateCreateSQL(Blueprint const &bp) -> std::string {
     std::vector<std::string> const &columnNames = bp.GetColumnNames();
     std::unordered_map<std::string, Column> const &columns = bp.GetColumns();
 
-    size_t i = 0;
-    for (std::string const &key : columnNames) {
+    // Single pass: build CREATE TABLE and collect index statements
+    std::vector<std::string> indexStatements;
+    indexStatements.reserve(columnNames.size()); // worst case: all columns have indexes
+    
+    for (size_t i = 0; i < columnNames.size(); ++i) {
+        std::string const &key = columnNames[i];
         Column const &col = columns.at(key);
+        
         ss << std::format("  {} {}{}", col.realName, GenerateSQLType(col), GenerateSQLConstraints(col));
-        if (i < columns.size() - 1) { ss << ','; }
+        if (i < columnNames.size() - 1) { ss << ','; }
         ss << '\n';
-        i++;
-    }
-    ss << ");\n";
-    i = 0; // reset for reuse
-    for (std::string const &key : columnNames) {
-        Column const &col = columns.at(key);
-        if (col.unique || col.index) {
-            if (col.unique) {
-                ss << std::format("CREATE UNIQUE INDEX {} ON {} ({});\n", GetConstraintName(col, "key"), col.tableName, col.realName);
-            } else if (col.index) {
-                ss << std::format("CREATE INDEX {} ON {} ({});\n", GetConstraintName(col, "idx"), col.tableName, col.realName);
-            }
+        
+        // Collect index statements during the same iteration
+        if (col.unique) {
+            indexStatements.emplace_back(std::format("CREATE UNIQUE INDEX {} ON {} ({});", 
+                                                      GetConstraintName(col, "key"), col.tableName, col.realName));
+        } else if (col.index) {
+            indexStatements.emplace_back(std::format("CREATE INDEX {} ON {} ({});", 
+                                                      GetConstraintName(col, "idx"), col.tableName, col.realName));
         }
-        ++i;
     }
+    
+    ss << ");\n";
+    
+    // Append index statements
+    for (const auto &indexStmt : indexStatements) {
+        ss << indexStmt << '\n';
+    }
+    
     return Utils::FixIndent(ss.str());
 }
 
