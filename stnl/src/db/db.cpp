@@ -50,7 +50,7 @@ auto DB::GetIOC() -> asio::io_context & {
 }
 
 auto DB::Exec(std::string_view qSQL, bool silent) -> QResult {
-    if (!silent) { Logger::Dbg() << "DB::Exec:qSQL: \n" << qSQL; }
+    if (!silent) { Logger::Dbg() << "DB::Exec:qSQL:\n" << qSQL; }
     QResult qResult{.data = pqxx::result{}, .ok = false, .msg = ""};
     pqxx::connection *pConn = nullptr;
     try {

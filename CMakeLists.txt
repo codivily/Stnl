@@ -80,3 +80,4 @@ endif()
 
 add_subdirectory(stnl)
 add_subdirectory(main)
+add_subdirectory(tests)
